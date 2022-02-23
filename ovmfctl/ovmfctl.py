@@ -76,15 +76,15 @@ var_template = {
     'pkidx'      : 0,
     'data'       : b'',
     'time'       : {
-        'year': 0,
-        'month': 0,
-        'day': 0,
-        'hour': 0,
-        'min': 0,
-        'ns': 0,
-        'sec': 0,
-        'tz': 0,
-        'dl': 0,
+        'year'   : 0,
+        'month'  : 0,
+        'day'    : 0,
+        'hour'   : 0,
+        'min'    : 0,
+        'ns'     : 0,
+        'sec'    : 0,
+        'tz'     : 0,
+        'dl'     : 0,
     }
 }
 
