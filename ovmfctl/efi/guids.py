@@ -1,9 +1,15 @@
 #!/usr/bin/python
 
+NvData         = "fff12b8d-7696-4c8b-a985-2747075b4f50"
+AuthVars       = "aaf32c78-947b-439a-a180-2e144ec37792"
+
+EfiCertX509    = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
+EfiCertSha256  = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
+
 name_table = {
     # firmware volumes
-    "fff12b8d-7696-4c8b-a985-2747075b4f50" : "NvData",
-    "aaf32c78-947b-439a-a180-2e144ec37792" : "AuthVars",
+    NvData                                 : "NvData",
+    AuthVars                               : "AuthVars",
 
     # variable types
     "8be4df61-93ca-11d2-aa0d-00e098032b8c" : "EfiGlobalVariable",
@@ -21,8 +27,8 @@ name_table = {
     "937fe521-95ae-4d1a-8929-48bcd90ad31a" : "EfiIp6ConfigProtocol",
 
     # signature list types
-    "a5c059a1-94e4-4aa7-87b5-ab155c2bf072" : "EfiCertX509",
-    "c1c41626-504c-4092-aca9-41f936934328" : "EfiCertSha256",
+    EfiCertX509                            : "EfiCertX509",
+    EfiCertSha256                          : "EfiCertSha256",
 
     # signature owner
     "77fa9abd-0359-4d32-bd60-28f4e78f784b" : "MicrosoftVendor",

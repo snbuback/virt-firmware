@@ -159,7 +159,7 @@ def parse_sigs(var, extract):
                 'guid'       : owner,
                 'data'       : sdata,
             }
-            if guid == "a5c059a1-94e4-4aa7-87b5-ab155c2bf072":
+            if guid == guids.EfiCertX509:
                 sig['x509'] = x509.load_der_x509_certificate(sdata)
                 if extract:
                     extract_cert(var, sig['ascii_guid'], sig['x509'])
@@ -217,7 +217,7 @@ def parse_varstore(file, data, start):
     (size, format, state) = struct.unpack_from("=LBB", data, start + 16)
     print("varstore=%s size=0x%x format=0x%x state=0x%x" %
           (guids.name(guid), size, format, state))
-    if guid != "aaf32c78-947b-439a-a180-2e144ec37792":
+    if guid != guids.AuthVars:
         print(f"ERROR: {file}: unknown varstore guid")
         exit(1)
     if format != 0x5a:
@@ -236,7 +236,7 @@ def parse_volume(file, data):
     if sig != 0x4856465f:
         print(f"ERROR: {file}: not a firmware volume")
         exit(1)
-    if guid != "fff12b8d-7696-4c8b-a985-2747075b4f50":
+    if guid != guids.NvData:
         print(f"ERROR: {file}: not a variable store")
         exit(1)
     return parse_varstore(file, data, hlen)
@@ -448,8 +448,8 @@ def var_add_cert(vars, name, owner, file, replace = False):
         'x509'       : cert,
     })
     var['siglists'].append({
-        'ascii_guid' : "a5c059a1-94e4-4aa7-87b5-ab155c2bf072",  # x509
-        'guid'       : var_guid("a5c059a1-94e4-4aa7-87b5-ab155c2bf072"),
+        'ascii_guid' : guids.EfiCertX509,
+        'guid'       : var_guid(guids.EfiCertX509),
         'header'     : b'',
         'sigs'       : sigs,
     })
@@ -473,8 +473,8 @@ def var_add_dummy_dbx(vars, owner):
         'data'       : hashlib.sha256(b'').digest(),
     })
     var['siglists'].append({
-        'ascii_guid' : "c1c41626-504c-4092-aca9-41f936934328",  # sha256
-        'guid'       : var_guid("c1c41626-504c-4092-aca9-41f936934328"),
+        'ascii_guid' : guids.EfiCertSha256,
+        'guid'       : var_guid(guids.EfiCertSha256),
         'header'     : b'',
         'sigs'       : sigs,
     })
