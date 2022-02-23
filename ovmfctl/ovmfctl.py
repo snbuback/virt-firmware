@@ -268,9 +268,8 @@ def print_hexdump(data, start, end):
             pos += 16
         if count == 256 or start+count == end:
             break
-
-def print_hex(var):
-    print_hexdump(var['data'], 0, len(var['data']))
+    if start+count < end:
+        print("    %06x: [ ... ]" % (pos))
 
 def print_null(var):
     return
@@ -299,11 +298,9 @@ print_funcs = {
 
     'Lang'             : print_ascii,
     'PlatformLang'     : print_ascii,
-
-    'certdb'           : print_hex,
 }
 
-def print_var(var, verbose):
+def print_var(var, verbose, hexdump):
     print("  - name=%s guid=%s size=%d" %
           (var['ascii_name'], guids.name(var['ascii_guid']), len(var['data'])))
     func = print_funcs.get(var['ascii_name'], print_null)
@@ -314,11 +311,13 @@ def print_var(var, verbose):
         print("----- raw -----")
         pprint.pprint(var)
         print("----- end -----")
+    if hexdump:
+        print_hexdump(var['data'], 0, len(var['data']))
 
-def print_vars(vars, verbose):
+def print_vars(vars, verbose, hexdump):
     print("# printing variables ...")
     for item in vars.keys():
-        print_var(vars[item], verbose)
+        print_var(vars[item], verbose, hexdump)
     print("# ... done")
 
 
@@ -509,6 +508,8 @@ def main():
                       help = 'print varstore')
     parser.add_option('-v', '--verbose', dest = 'verbose', action = 'store_true', default = False,
                       help = 'print varstore verbosely')
+    parser.add_option('-x', '--hexdump', dest = 'hexdump', action = 'store_true', default = False,
+                      help = 'print variable hexdumps')
     parser.add_option('-o', '--output', dest = 'output', type = 'string',
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
@@ -546,7 +547,7 @@ def main():
         var_set_bool(vars, 'CustomMode', False)
 
     if options.print:
-        print_vars(vars, options.verbose)
+        print_vars(vars, options.verbose, options.hexdump)
 
     if options.output:
         outfile = infile[:start]
