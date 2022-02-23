@@ -1,4 +1,4 @@
-image: quay.io/centos/centos:stream8
+image: registry.fedoraproject.org/fedora:latest
 
 pylint:
   stage: build
