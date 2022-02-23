@@ -1,7 +1,16 @@
 image: registry.fedoraproject.org/fedora:latest
 
+before_script:
+  - dnf install -y python3-pip python3-setuptools python3-pytest pylint
+
 pylint:
   stage: build
   script:
-    dnf install -y pylint
-    make pylint
+    - make pylint
+
+install:
+  stage: build
+  script:
+    - make install
+    - ovmfctl --help
+    - ovmfdump --help
