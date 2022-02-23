@@ -1,9 +1,13 @@
 
+PYLINT_OPTS	:=
+#PYLINT_OPTS	+= --py-version 3.6
+PYLINT_OPTS	+= -d invalid-name
+
 default:
 	@echo "targets: install uninstall clean"
 
 lint pylint:
-	pylint --py-version 3.6 -d invalid-name ovmfctl/
+	pylint $(PYLINT_OPTS) ovmfctl/
 
 install:
 	python3 -m pip install --user .
