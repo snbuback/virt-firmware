@@ -11,6 +11,7 @@ pylint:
 install:
   stage: build
   script:
+    - export PATH="${PATH}:${HOME}/.local/bin"
     - make install
     - ovmfctl --help
     - ovmfdump --help
