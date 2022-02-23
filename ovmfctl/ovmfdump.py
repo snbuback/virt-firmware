@@ -11,7 +11,7 @@ from ovmfctl.efi import guids
 def parse_guid(data, offset):
     guid = uuid.UUID(bytes_le = data[offset:offset+16])
     name = guid.urn.split(":")[2]
-    return guids.name(name)
+    return name
 
 def parse_unicode(data, offset):
     pos = offset
@@ -95,7 +95,7 @@ def print_sections(data, start, end, indent):
         if type == 0x02: # guid defined
             guid = parse_guid(data, pos + hlen)
             (doff, attr) = struct.unpack_from("=HH", data, pos + hlen + 16)
-            extra += " [ subtype=%s doff=0x%x attr=0x%x ]" % (guid, doff, attr)
+            extra += " [ subtype=%s doff=0x%x attr=0x%x ]" % (guids.name(guid), doff, attr)
         if type == 0x10: # pe32
             extra += " [ pe32 ]"
         if type == 0x13: # depex
@@ -120,7 +120,7 @@ def print_sections(data, start, end, indent):
         print("%06x: %*ssection type=0x%x size=0x%x%s" %
               (pos, indent, "", type, size, extra))
 
-        if guid == "guid:LzmaCompress":
+        if guid == guids.LzmaCompress:
             unxz = lzma.decompress(data[pos+doff:pos+size])
             print("--xz--: %*scompressed sections follow" % (indent, ""))
             print_sections(unxz, 0, len(unxz), indent + 2)
@@ -150,7 +150,7 @@ def print_varstore(data, start, end, indent):
     guid = parse_guid(data, start)
     (size, format, state) = struct.unpack_from("=LBB", data, start + 16)
     print("%06x: %*svarstore=%s size=0x%x format=0x%x state=0x%x" %
-          (start, indent, "", guid, size, format, state))
+          (start, indent, "", guids.name(guid), size, format, state))
     pos = start + 16 + 12
     while True:
         pos = (pos + 3) & ~3; # align
@@ -167,23 +167,23 @@ def print_resetvector(data, start, end, indent):
     tdxpos = 0
     pos = end - 0x20
     guid = parse_guid(data, pos - 0x10);
-    if guid != "guid:OvmfGuidList":
+    if guid != guids.OvmfGuidList:
         return
     size = struct.unpack_from("=H", data, pos - 0x12)
     start = pos - size[0]
     print("%06x: %*sguid=%s totalsize=0x%x" %
-          (pos, indent, "", guid, size[0]))
+          (pos, indent, "", guids.name(guid), size[0]))
     pos -= 0x12
     while pos - 0x12 >= start:
         guid = parse_guid(data, pos - 0x10);
         size = struct.unpack_from("=H", data, pos - 0x12)
         print("%06x: %*sguid=%s size=0x%x" %
-              (pos - 0x12, indent, "", guid, size[0]))
+              (pos - 0x12, indent, "", guids.name(guid), size[0]))
         print_hexdump(data, pos - size[0], pos - 0x12, indent + 2)
-        if guid == "guid:OvmfSevMetadataOffset":
+        if guid == guids.OvmfSevMetadataOffset:
             offset = struct.unpack_from("=L", data, pos - size[0])
             sevpos = end - offset[0]
-        if guid == "guid:TdxMetadataOffset":
+        if guid == guids.TdxMetadataOffset:
             offset = struct.unpack_from("=L", data, pos - size[0])
             tdxpos = end - offset[0]
         pos -= size[0]
@@ -254,13 +254,13 @@ def print_one_file(data, offset, indent):
         sections = True
 
     print("%06x: %*sfile=%s type=%s size=0x%x" %
-          (offset, indent, "", guid, typename, size))
+          (offset, indent, "", guids.name(guid), typename, size))
     if sections:
         print_sections(data,
                        offset + 16 + hlen,
                        offset + size,
                        indent + 2)
-    if guid == "guid:ResetVector":
+    if guid == guids.ResetVector:
         print_resetvector(data,
                           offset + 16 + hlen,
                           offset + size,
@@ -280,13 +280,13 @@ def print_one_volume(data, offset, indent):
     guid = parse_guid(data, offset + 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = struct.unpack_from("=QLLHHHxBLL", data, offset + 32)
     print("%06x: %*svol=%s vlen=0x%x rev=%d blocks=%dx%d (0x%x)" %
-          (offset, indent, "", guid, vlen, rev, blocks, blksize, blocks * blksize))
-    if guid == "guid:Ffs":
+          (offset, indent, "", guids.name(guid), vlen, rev, blocks, blksize, blocks * blksize))
+    if guid == guids.Ffs:
         print_all_files(data,
                         offset + hlen,
                         offset + blocks * blksize,
                         indent + 2)
-    if guid == "guid:NvData":
+    if guid == guids.NvData:
         print_varstore(data,
                        offset + hlen,
                        offset + blocks * blksize,
