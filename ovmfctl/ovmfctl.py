@@ -29,40 +29,40 @@ vars_settings = {
     'SecureBootEnable' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
-        'guid' : "f0a30bc7-af08-4556-99c4-001009c93a44",
+        'guid' : guids.EfiSecureBootEnableDisable,
     },
     'CustomMode' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
-        'guid' : "c076ec0c-7028-4399-a072-71ee5c448b9f",
+        'guid' : guids.EfiCustomModeEnable,
     },
     'PK' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS |
                   EFI_VARIABLE_RUNTIME_ACCESS |
                   EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : "8be4df61-93ca-11d2-aa0d-00e098032b8c",
+        'guid' : guids.EfiGlobalVariable,
     },
     'KEK' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS |
                   EFI_VARIABLE_RUNTIME_ACCESS |
                   EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : "8be4df61-93ca-11d2-aa0d-00e098032b8c",
+        'guid' : guids.EfiGlobalVariable,
     },
     'db' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS |
                   EFI_VARIABLE_RUNTIME_ACCESS |
                   EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : "d719b2cb-3d3a-4596-a3bc-dad00e67656f",
+        'guid' : guids.EfiImageSecurityDatabase,
     },
     'dbx' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS |
                   EFI_VARIABLE_RUNTIME_ACCESS |
                   EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : "d719b2cb-3d3a-4596-a3bc-dad00e67656f",
+        'guid' : guids.EfiImageSecurityDatabase,
     },
 }
 
