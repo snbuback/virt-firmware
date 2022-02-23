@@ -16,7 +16,7 @@ Currently focused on enrolling certificates and enabling secure boot.
 Install
 -------
 
-Just use pip.
+`pip3 install git+https://gitlab.com/kraxel/ovmfctl.git`
 
 TODO list
 ---------
