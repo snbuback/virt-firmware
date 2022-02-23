@@ -1,5 +1,5 @@
 
-tools for ovmf / armvirt firmware volumes
+Tools for ovmf / armvirt firmware volumes
 =========================================
 
 ovmfdump
@@ -18,8 +18,8 @@ Install
 
 Just use pip.
 
-todo list
+TODO list
 ---------
 
- * modularize code
- * add documentation
+ * Modularize code.
+ * Add documentation.
