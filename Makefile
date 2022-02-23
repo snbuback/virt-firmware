@@ -4,7 +4,7 @@ PYLINT_OPTS	:=
 PYLINT_OPTS	+= -d invalid-name
 
 default:
-	@echo "targets: install uninstall clean"
+	@echo "targets: lint install uninstall clean"
 
 lint pylint:
 	pylint $(PYLINT_OPTS) ovmfctl/
