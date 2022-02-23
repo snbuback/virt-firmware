@@ -1,0 +1,7 @@
+image: quay.io/centos/centos:stream8
+
+pylint:
+  stage: build
+  script:
+    pip3 install pylint
+    make pylint

@@ -2,6 +2,9 @@
 default:
 	@echo "targets: install uninstall clean"
 
+lint pylint:
+	pylint -d invalid-name ovmfctl/
+
 install:
 	python3 -m pip install --user .
 
