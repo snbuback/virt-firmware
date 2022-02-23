@@ -6,38 +6,12 @@ import uuid
 import struct
 import optparse
 
+from ovmfctl.efi import guids
+
 def parse_guid(data, offset):
     guid = uuid.UUID(bytes_le = data[offset:offset+16])
     name = guid.urn.split(":")[2]
-    if name == "ee4e5898-3914-4259-9d6e-dc7bd79403cf":
-        return "guid:LzmaCompress"
-    if name == "8c8ce578-8a3d-4f1c-9935-896185c32dd3":
-        return "guid:Ffs"
-    if name == "9e21fd93-9c72-4c15-8c4b-e77f1db2d792":
-        return "guid:FvMainCompact"
-    if name == "fff12b8d-7696-4c8b-a985-2747075b4f50":
-        return "guid:NvData"
-    if name == "aaf32c78-947b-439a-a180-2e144ec37792":
-        return "guid:AuthVars"
-    if name == "df1ccef6-f301-4a63-9661-fc6030dcc880":
-        return "guid:SecMain"
-    if name == "1ba0062e-c779-4582-8566-336ae8f78f09":
-        return "guid:ResetVector"
-    if name == "96b582de-1fb2-45f7-baea-a366c55a082d":
-        return "guid:OvmfGuidList"
-    if name == "7255371f-3a3b-4b04-927b-1da6efa8d454":
-        return "guid:SevHashTableBlock"
-    if name == "4c2eb361-7d9b-4cc3-8081-127c90d3d294":
-        return "guid:SevSecretBlock"
-    if name == "00f771de-1a7e-4fcb-890e-68c77e2fb44e":
-        return "guid:SevProcessorReset"
-    if name == "dc886566-984a-4798-a75e-5585a7bf67cc":
-        return "guid:OvmfSevMetadataOffset"
-    if name == "e47a6535-984a-4798-865e-4685a7bf8ec2":
-        return "guid:TdxMetadataOffset"
-    if name == "ffffffff-ffff-ffff-ffff-ffffffffffff":
-        return "guid:NotValid"
-    return name
+    return guids.name(name)
 
 def parse_unicode(data, offset):
     pos = offset
