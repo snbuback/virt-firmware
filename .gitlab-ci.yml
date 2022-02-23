@@ -2,6 +2,7 @@ image: registry.fedoraproject.org/fedora:latest
 
 before_script:
   - dnf install -y make python3-pip python3-setuptools python3-pytest pylint
+  - export PATH="${PATH}:${HOME}/.local/bin"
 
 pylint:
   stage: build
@@ -11,7 +12,6 @@ pylint:
 install:
   stage: build
   script:
-    - export PATH="${PATH}:${HOME}/.local/bin"
     - make install
     - ovmfctl --help
     - ovmfdump --help
