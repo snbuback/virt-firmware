@@ -7,6 +7,7 @@ before_script:
 pylint:
   stage: build
   script:
+    - pylint --help
     - make pylint
 
 install:
