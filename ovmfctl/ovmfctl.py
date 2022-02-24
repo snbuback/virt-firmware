@@ -12,6 +12,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
 from ovmfctl.efi import guids
+from ovmfctl.efi import ucs16
 
 ##################################################################################################
 # constants
@@ -91,20 +92,6 @@ var_template = {
 
 ##################################################################################################
 # parse stuff
-
-def parse_unicode(data, offset):
-    pos = offset
-    name = ""
-    while True:
-        unichar = struct.unpack_from("=H", data, pos)
-        if unichar[0] == 0:
-            break
-        if unichar[0] >= 128:
-            name += "?"
-        else:
-            name += f'{unichar[0]:c}'
-        pos += 2
-    return name
 
 def parse_time(data, offset):
     (year, month, day, hour, minute, second, ns, tz, dl) = \
@@ -192,7 +179,7 @@ def parse_vars(data, start, end, extract):
 
             var['time'] = parse_time(data, pos + 16)
             var['ascii_guid'] = guids.parse(var['guid'], 0)
-            var['ascii_name'] = parse_unicode(var['name'], 0)
+            var['ascii_name'] = ucs16.from_ucs16(var['name'], 0)
             varlist[var['ascii_name']] = var
 
             if (var['ascii_name'] == "PK"  or
@@ -375,14 +362,6 @@ def vars_delete(varlist, delete):
         else:
             print(f'# WARNING: variable {item} not found')
 
-def var_name(astr):
-    ustr = b''
-    for char in list(astr):
-        ustr += char.encode()
-        ustr += b'\x00'
-    ustr += b'\x00\x00'
-    return ustr
-
 def var_update_time(var):
     if not var['attr'] & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
         return
@@ -405,7 +384,7 @@ def var_create(varlist, name):
     var['ascii_guid'] = cfg['guid']
     var['ascii_name'] = name
     var['guid']       = guids.binary(cfg['guid'])
-    var['name']       = var_name(name)
+    var['name']       = ucs16.to_ucs16(name)
     var['attr']       = cfg['attr']
     varlist[name] = var
     return var

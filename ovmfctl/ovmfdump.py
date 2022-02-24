@@ -6,6 +6,7 @@ import struct
 import optparse
 
 from ovmfctl.efi import guids
+from ovmfctl.efi import ucs16
 
 def parse_unicode(data, offset):
     pos = offset
@@ -96,15 +97,15 @@ def print_sections(data, start, end, indent):
             extra += " [ dxe depex ]"
         if typeid == 0x14: # version
             build = struct.unpack_from("=H", data, pos + hlen)
-            name = parse_unicode(data, pos + hlen + 2)
+            name = ucs16.from_ucs16(data, pos + hlen + 2)
             extra += f' [ build={build[0]} version={name} ]'
         if typeid == 0x15: # user interface
-            name = parse_unicode(data, pos + hlen)
+            name = ucs16.from_ucs16(data, pos + hlen)
             extra += f' [ name={name} ]'
         if typeid == 0x17: # firmware volume
             extra += " [ firmware volume ]"
         if typeid == 0x19: # raw
-            name = parse_unicode(data, pos + hlen)
+            name = ucs16.from_ucs16(data, pos + hlen)
             extra += " [ raw ]"
         if typeid == 0x1b: # pei depex
             extra += " [ pei depex ]"
@@ -132,7 +133,7 @@ def print_var(data, offset, indent):
         return 0
     (pk, nsize, dsize) = struct.unpack_from("=LLL", data, offset + 32)
     guid = guids.parse(data, offset + 44)
-    name = parse_unicode(data, offset + 44 + 16)
+    name = ucs16.from_ucs16(data, offset + 44 + 16)
     print(f'{offset:06x}: {"":{indent}s}var state=0x{state:x} '
           f'attr=0x{attr:x} nsize=0x{nsize:x} dsize=0x{dsize:x} [ {name} ]')
     start = offset + 44 + 16 + nsize
