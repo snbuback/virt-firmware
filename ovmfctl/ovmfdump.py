@@ -155,6 +155,8 @@ def print_varstore(data, start, end, indent):
         pos += vsize
         if pos >= start + size:
             break
+        if pos >= end:
+            break
     return size
 
 def print_resetvector(data, start, end, indent):
