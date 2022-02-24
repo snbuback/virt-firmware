@@ -59,7 +59,7 @@ def print_hexdump(data, start, end, indent):
             hstr += " "
             astr += " "
         if count % 16 == 0 or start+count == end:
-            print("%06x: %*s%-52s %s" % (pos, indent, "", hstr, astr))
+            print(f'{pos:06x}: {"":{indent}s}{hstr:52s} {astr}')
             hstr = ""
             astr = ""
             pos += 16
@@ -78,11 +78,11 @@ def print_sections(data, start, end, indent):
             hlen = 8
 
         if size == 0:
-            print("%06x: %*sstop: section size is zero" % (pos, indent, ""))
+            print(f'{pos:06x}: {"":{indent}s}stop: section size is zero')
             break
         if pos + size > end:
-            print("%06x: %*sstop: section size is too big (0x%x + 0x%x > 0x%x)" %
-                  (pos, indent, "", pos, size, end))
+            print(f'{pos:06x}: {"":{indent}s}stop: section size is '
+                  f'too big (0x{pos:x} + 0x{size:x} > 0x{end:x})')
             break
 
         extra = ""
@@ -90,7 +90,7 @@ def print_sections(data, start, end, indent):
         if typeid == 0x02: # guid defined
             guid = guids.parse(data, pos + hlen)
             (doff, attr) = struct.unpack_from("=HH", data, pos + hlen + 16)
-            extra += " [ subtype=%s doff=0x%x attr=0x%x ]" % (guids.name(guid), doff, attr)
+            extra += f' [ subtype={guids.name(guid)} doff=0x{doff:x} attr=0x{attr:x} ]'
         if typeid == 0x10: # pe32
             extra += " [ pe32 ]"
         if typeid == 0x13: # depex
@@ -98,10 +98,10 @@ def print_sections(data, start, end, indent):
         if typeid == 0x14: # version
             build = struct.unpack_from("=H", data, pos + hlen)
             name = parse_unicode(data, pos + hlen + 2)
-            extra += " [ build=%d version=%s ]" % (build[0], name)
+            extra += f' [ build={build[0]} version={name} ]'
         if typeid == 0x15: # user interface
             name = parse_unicode(data, pos + hlen)
-            extra += " [ name=%s ]" % (name)
+            extra += f' [ name={name} ]'
         if typeid == 0x17: # firmware volume
             extra += " [ firmware volume ]"
         if typeid == 0x19: # raw
@@ -112,14 +112,14 @@ def print_sections(data, start, end, indent):
         if typeid == 0x1c: # smm depex
             extra += " [ smm depex ]"
 
-        print("%06x: %*ssection type=0x%x size=0x%x%s" %
-              (pos, indent, "", typeid, size, extra))
+        print(f'{pos:06x}: {"":{indent}s}section '
+              f'type=0x{typeid:x} size=0x{size:x}{extra}')
 
         if guid == guids.LzmaCompress:
             unxz = lzma.decompress(data[pos+doff:pos+size])
-            print("--xz--: %*scompressed sections follow" % (indent, ""))
+            print(f'--xz--: {"":{indent}s}compressed sections follow')
             print_sections(unxz, 0, len(unxz), indent + 2)
-            print("--xz--: %*send" % (indent, ""))
+            print(f'--xz--: {"":{indent}s}end')
         if typeid == 0x17: # firmware volume
             print_one_volume(data, pos + hlen, indent + 1)
 
@@ -134,8 +134,8 @@ def print_var(data, offset, indent):
     (pk, nsize, dsize) = struct.unpack_from("=LLL", data, offset + 32)
     guid = guids.parse(data, offset + 44)
     name = parse_unicode(data, offset + 44 + 16)
-    print("%06x: %*svar state=0x%x attr=0x%x nsize=0x%x dsize=0x%x [ %s ]" %
-          (offset, indent, "", state, attr, nsize, dsize, name))
+    print(f'{offset:06x}: {"":{indent}s}var state=0x{state:x} '
+          f'attr=0x{attr:x} nsize=0x{nsize:x} dsize=0x{dsize:x} [ {name} ]')
     start = offset + 44 + 16 + nsize
     if state == 0x3f:
         print_hexdump(data, start, start + dsize, indent+2)
@@ -144,8 +144,8 @@ def print_var(data, offset, indent):
 def print_varstore(data, start, end, indent):
     guid = guids.parse(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
-    print("%06x: %*svarstore=%s size=0x%x format=0x%x state=0x%x" %
-          (start, indent, "", guids.name(guid), size, storefmt, state))
+    print(f'{start:06x}: {"":{indent}s}varstore={guids.name(guid)} '
+          f'size=0x{size:x} format=0x{storefmt:x} state=0x{state:x}')
     pos = start + 16 + 12
     while True:
         pos = (pos + 3) & ~3  # align
@@ -166,14 +166,14 @@ def print_resetvector(data, start, end, indent):
         return
     size = struct.unpack_from("=H", data, pos - 0x12)
     start = pos - size[0]
-    print("%06x: %*sguid=%s totalsize=0x%x" %
-          (pos, indent, "", guids.name(guid), size[0]))
+    print(f'{pos:06x}: {"":{indent}s}'
+          f'guid={guids.name(guid)} totalsize=0x{size[0]:x}')
     pos -= 0x12
     while pos - 0x12 >= start:
         guid = guids.parse(data, pos - 0x10)
         size = struct.unpack_from("=H", data, pos - 0x12)
-        print("%06x: %*sguid=%s size=0x%x" %
-              (pos - 0x12, indent, "", guids.name(guid), size[0]))
+        print(f'{pos - 0x12:06x}: {"":{indent}s}'
+              f'guid={guids.name(guid)} size=0x{size[0]:x}')
         print_hexdump(data, pos - size[0], pos - 0x12, indent + 2)
         if guid == guids.OvmfSevMetadataOffset:
             offset = struct.unpack_from("=L", data, pos - size[0])
@@ -185,26 +185,26 @@ def print_resetvector(data, start, end, indent):
 
     if sevpos:
         (magic, size, version, entries) = struct.unpack_from("=LLLL", data, sevpos)
-        print("%06x: %*ssev: size=0x%x version=%d entries=%d" %
-              (sevpos, indent, "", size, version, entries))
+        print(f'{sevpos:06x}: {"":{indent}s}sev: '
+              f'size=0x{size:x} version={version} entries={entries}')
         for i in range(entries):
             (base, size, typeid) = struct.unpack_from(
                 "=LLL", data, sevpos + 16 + i * 12)
-            print("%06x: %*sbase=0x%x size=0x%x type=%s" %
-                  (sevpos + 16 + i * 12, indent + 2, "",
-                   base, size, parse_sev_type(typeid)))
+            print(f'{sevpos + 16 + i * 12:06x}: {"":{indent+2}s}'
+                  f'base=0x{base:x} size=0x{size:x} '
+                  f'type={parse_sev_type(typeid)}')
 
     if tdxpos:
         (magic, size, version, entries) = struct.unpack_from("=LLLL", data, tdxpos)
-        print("%06x: %*stdx: size=0x%x version=%d entries=%d" %
-              (tdxpos, indent, "", size, version, entries))
+        print(f'{tdxpos:06x}: {"":{indent}s}tdx: '
+              f'size=0x{size:x} version={version} entries={entries}')
         for i in range(entries):
             (filebase, filesize, membase, memsize, typeid, flags) = struct.unpack_from(
                 "=LLQQLL", data, tdxpos + 16 + i * 32)
-            print("%06x: %*sfbase=0x%x fsize=0x%x mbase=0x%x msize=0x%x type=%s, flags=0x%x" %
-                  (tdxpos + 16 + i * 32, indent + 2, "",
-                   filebase, filesize, membase, memsize,
-                   parse_tdx_type(typeid), flags))
+            print(f'{tdxpos + 16 + i * 32:06x}: {"":{indent+2}s}'
+                  f'fbase=0x{filebase:x} fsize=0x{filesize:x} '
+                  f'mbase=0x{membase:x} msize=0x{memsize:x} '
+                  f'type={parse_tdx_type(typeid)}, flags=0x{flags:x}')
 
 def print_one_file(data, offset, indent):
     guid = guids.parse(data, offset)
@@ -216,7 +216,7 @@ def print_one_file(data, offset, indent):
         size = s1 | (s2 << 8) | (s3 << 16)
         hlen = 8
 
-    typename = "0x%x" % typeid
+    typename = f'0x{typeid:x}'
     sections = False
     if typeid == 0xf0:
         typename = "padding"
@@ -248,8 +248,8 @@ def print_one_file(data, offset, indent):
         typename = "fw-volume"
         sections = True
 
-    print("%06x: %*sfile=%s type=%s size=0x%x" %
-          (offset, indent, "", guids.name(guid), typename, size))
+    print(f'{offset:06x}: {"":{indent}s}vol={guids.name(guid)} '
+          f'type={typename} size=0x{size:x}')
     if sections:
         print_sections(data,
                        offset + 16 + hlen,
@@ -275,8 +275,9 @@ def print_one_volume(data, offset, indent):
     guid = guids.parse(data, offset + 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, offset + 32)
-    print("%06x: %*svol=%s vlen=0x%x rev=%d blocks=%dx%d (0x%x)" %
-          (offset, indent, "", guids.name(guid), vlen, rev, blocks, blksize, blocks * blksize))
+    print(f'{offset:06x}: {"":{indent}s}vol={guids.name(guid)} '
+          f'vlen=0x{vlen:x} rev={rev} blocks={blocks}*{blksize} '
+          f'(0x{blocks * blksize:x})')
     if guid == guids.Ffs:
         print_all_files(data,
                         offset + hlen,
