@@ -138,8 +138,8 @@ def extract_cert(var, owner, cert):
         print(f"# WARNNG: exists: {filename}")
         return
     print(f"# writing: {filename}")
-    with open(filename, "wb") as file:
-        file.write(cert.public_bytes(serialization.Encoding.PEM))
+    with open(filename, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
 
 def parse_sigs(var, extract):
     data = var['data']
@@ -286,13 +286,13 @@ def print_ascii(var):
 
 def print_siglists(var):
     for item in var['siglists']:
-        type = guids.name(item['ascii_guid'])
+        name = guids.name(item['ascii_guid'])
         count = len(item['sigs'])
-        print(f'    list type={type} count={count}')
+        print(f'    list type={name} count={count}')
         cert = item['sigs'][0].get('x509')
         if cert:
             cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-            print(f'      x509 CN=cn.value')
+            print(f'      x509 CN={cn.value}')
 
 print_funcs = {
     'SecureBootEnable' : print_bool,
@@ -318,10 +318,10 @@ def print_var(var, verbose, hexdump):
     if hexdump:
         print_hexdump(var['data'], 0, len(var['data']))
 
-def print_vars(vars, verbose, hexdump):
+def print_vars(varlist, verbose, hexdump):
     print("# printing variables ...")
-    for item in vars.keys():
-        print_var(vars[item], verbose, hexdump)
+    for item in varlist.keys():
+        print_var(varlist[item], verbose, hexdump)
     print("# ... done")
 
 
@@ -373,25 +373,25 @@ def write_var(var):
         blob += b'\0'
     return blob
 
-def vars_delete(vars, delete):
+def vars_delete(varlist, delete):
     for item in delete:
-        if vars.get(item):
-            print("# delete variable: %s" % item)
-            del vars[item]
+        if varlist.get(item):
+            print(f'# delete variable: {item}')
+            del varlist[item]
         else:
-            print("# WARNING: variable %s not found" % item)
+            print(f'# WARNING: variable {item} not found')
 
-def var_guid(ascii):
-    guid = uuid.UUID('urn:uuid:' + ascii)
+def var_guid(name):
+    guid = uuid.UUID(f'urn:uuid:{name}')
     return guid.bytes_le
 
-def var_name(ascii):
-    unicode = b''
-    for char in list(ascii):
-        unicode += char.encode()
-        unicode += b'\x00'
-    unicode += b'\x00\x00'
-    return unicode
+def var_name(astr):
+    ustr = b''
+    for char in list(astr):
+        ustr += char.encode()
+        ustr += b'\x00'
+    ustr += b'\x00\x00'
+    return ustr
 
 def var_update_time(var):
     if not var['attr'] & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
@@ -404,26 +404,26 @@ def var_update_time(var):
     var['time']['min']   = now.minute
     var['time']['sec']   = now.second
 
-def var_create(vars, name):
+def var_create(varlist, name):
     cfg = vars_settings.get(name)
     if not cfg:
-        print("ERROR: unknown variable %s" % name)
+        print(f'ERROR: unknown variable {name}')
         sys.exit(1)
 
-    print("# create variable %s" % name)
+    print(f'# create variable {name}')
     var = var_template.copy()
     var['ascii_guid'] = cfg['guid']
     var['ascii_name'] = name
     var['guid']       = var_guid(cfg['guid'])
     var['name']       = var_name(name)
     var['attr']       = cfg['attr']
-    vars[name] = var
+    varlist[name] = var
     return var
 
-def var_set_bool(vars, name, value):
-    var = vars.get(name)
+def var_set_bool(varlist, name, value):
+    var = varlist.get(name)
     if not var:
-        var = var_create(vars, name)
+        var = var_create(varlist, name)
 
     if value:
         var['data'] = b'\x01'
@@ -431,18 +431,17 @@ def var_set_bool(vars, name, value):
         var['data'] = b'\x00'
     var_update_time(var)
 
-def var_add_cert(vars, name, owner, file, replace = False):
-    var = vars.get(name)
+def var_add_cert(varlist, name, owner, file, replace = False):
+    var = varlist.get(name)
     if not var:
-        var = var_create(vars, name)
+        var = var_create(varlist, name)
     if not var.get('siglists') or replace:
-        print("# init/clear %s siglist" % name)
+        print(f'# init/clear {name} siglist')
         var['siglists'] = []
 
-    print("# add %s cert %s" % (name, file))
-    file = open(file, "rb")
-    pem = file.read()
-    file.close()
+    print(f'# add {name} cert {file}')
+    with open(file, "rb") as f:
+        pem = f.read()
     cert = x509.load_pem_x509_certificate(pem)
     sigs = []
     sigs.append({
@@ -461,12 +460,12 @@ def var_add_cert(vars, name, owner, file, replace = False):
     var_update_time(var)
 
 
-def var_add_dummy_dbx(vars, owner):
-    var = vars.get('dbx')
+def var_add_dummy_dbx(varlist, owner):
+    var = varlist.get('dbx')
     if var:
         return
 
-    var = var_create(vars, 'dbx')
+    var = var_create(varlist, 'dbx')
     var['siglists'] = []
 
     print("# add dummy dbx entry")
@@ -532,53 +531,51 @@ def main():
         print("ERROR: no input file specified (try -h for help)")
         sys.exit(1)
 
-    print("# reading varstore from %s" % options.input)
-    file = open(options.input, "rb")
-    infile = file.read()
-    file.close()
+    print(f'"# reading varstore from {options.input}')
+    with open(options.input, "rb") as f:
+        infile = f.read()
 
     (start, end) = parse_volume(options.input, infile)
-    print("var store range: 0x%x -> 0x%x" % (start, end))
-    vars = parse_vars(infile, start, end, options.extract)
+    print(f'var store range: 0x{start:x} -> 0x{end:x}')
+    varlist = parse_vars(infile, start, end, options.extract)
 
     if options.delete:
-        vars_delete(vars, options.delete)
+        vars_delete(varlist, options.delete)
 
     if options.pk:
-        var_add_cert(vars, 'PK', options.pk[0], options.pk[1], True)
+        var_add_cert(varlist, 'PK', options.pk[0], options.pk[1], True)
 
     if options.kek:
         for item in options.kek:
-            var_add_cert(vars, 'KEK', item[0], item[1])
+            var_add_cert(varlist, 'KEK', item[0], item[1])
 
     if options.db:
         for item in options.db:
-            var_add_cert(vars, 'db', item[0], item[1])
+            var_add_cert(varlist, 'db', item[0], item[1])
 
     if options.secureboot:
-        var_add_dummy_dbx(vars, "a0baa8a3-041d-48a8-bc87-c36d121b5e3d")
-        var_set_bool(vars, 'SecureBootEnable', True)
-        var_set_bool(vars, 'CustomMode', False)
+        var_add_dummy_dbx(varlist, "a0baa8a3-041d-48a8-bc87-c36d121b5e3d")
+        var_set_bool(varlist, 'SecureBootEnable', True)
+        var_set_bool(varlist, 'CustomMode', False)
 
     if options.print:
-        print_vars(vars, options.verbose, options.hexdump)
+        print_vars(varlist, options.verbose, options.hexdump)
 
     if options.output:
         outfile = infile[:start]
-        for item in vars.keys():
-            outfile += write_var(vars[item])
+        for item in varlist.keys():
+            outfile += write_var(varlist[item])
 
         if len(outfile) > end:
             print("ERROR: varstore is too small")
-            exit(1)
+            sys.exit(1)
 
         outfile += b''.zfill(end - len(outfile))
         outfile += infile[end:]
 
-        print("# writing varstore to %s" % options.output)
-        file = open(options.output, "wb")
-        file.write(outfile)
-        file.close()
+        print(f'# writing varstore to {options.output}')
+        with open(options.output, "wb") as f:
+            f.write(outfile)
 
     return 0
 
