@@ -1,17 +1,24 @@
 image: registry.fedoraproject.org/fedora:latest
 
 before_script:
-  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint
+  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint edk2-aarch64 edk2-ovmf
   - export PATH="${PATH}:${HOME}/.local/bin"
 
 pylint:
-  stage: build
   script:
     - make pylint
 
-install:
-  stage: build
+ovmfctl:
   script:
     - make install
     - ovmfctl --help
+    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd -p -x
+
+ovmfdump:
+  script:
+    - make install
     - ovmfdump --help
+    - ovmfdump -i /usr/share/edk2/aarch64/QEMU_EFI.fd
+    - ovmfdump -i /usr/share/edk2/aarch64/QEMU_VARS.fd
+    - ovmfdump -i /usr/share/OVMF/OVMF_CODE.secboot.fd
+    - ovmfdump -i /usr/share/OVMF/OVMF_VARS.secboot.fd
