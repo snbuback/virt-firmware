@@ -253,9 +253,6 @@ def print_hexdump(data, start, end):
     if start+count < end:
         print(f'    {pos:06x}: [ ... ]')
 
-def print_null(var):
-    return
-
 def print_bool(var):
     if var['data'][0]:
         print("    bool: ON")
@@ -288,8 +285,9 @@ def print_var(var, verbose, hexdump):
     gname = guids.name(var['ascii_guid'])
     size = len(var['data'])
     print(f'  - name={name} guid={gname} size={size}')
-    func = print_funcs.get(var['ascii_name'], print_null)
-    func(var)
+    pfunc = print_funcs.get(var['ascii_name'])
+    if pfunc:
+        pfunc(var)
     if var.get('siglists'):
         print_siglists(var)
     if verbose:
@@ -301,8 +299,8 @@ def print_var(var, verbose, hexdump):
 
 def print_vars(varlist, verbose, hexdump):
     print("# printing variables ...")
-    for item in varlist.keys():
-        print_var(varlist[item], verbose, hexdump)
+    for (key, item) in varlist.items():
+        print_var(item, verbose, hexdump)
     print("# ... done")
 
 
@@ -535,8 +533,8 @@ def main():
 
     if options.output:
         outfile = infile[:start]
-        for item in varlist.keys():
-            outfile += write_var(varlist[item])
+        for (key, item) in varlist.items():
+            outfile += write_var(item)
 
         if len(outfile) > end:
             print("ERROR: varstore is too small")
