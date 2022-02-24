@@ -1,4 +1,5 @@
 #!/usr/bin/python
+""" print and edit ovmf varstore files """
 import os
 import sys
 import uuid
@@ -99,28 +100,28 @@ def parse_guid(data, offset):
 
 def parse_unicode(data, offset):
     pos = offset
-    ascii = ""
+    name = ""
     while True:
         unichar = struct.unpack_from("=H", data, pos)
         if unichar[0] == 0:
             break
         if unichar[0] >= 128:
-            ascii += "?"
+            name += "?"
         else:
-            ascii += "%c" % unichar[0]
+            name += f'{unichar[0]:c}'
         pos += 2
-    return ascii
+    return name
 
 def parse_time(data, offset):
-    (year, month, day, hour, min, sec, ns, tz, dl) = \
+    (year, month, day, hour, minute, second, ns, tz, dl) = \
         struct.unpack_from("=HBBBBBxLhBx", data, offset)
     time = {
         'year'  : year,
         'month' : month,
         'day'   : day,
         'hour'  : hour,
-        'min'   : min,
-        'sec'   : sec,
+        'min'   : minute,
+        'sec'   : second,
         'ns'    : ns,
         'tz'    : tz,
         'dl'    : dl,
@@ -134,12 +135,11 @@ def extract_cert(var, owner, cert):
     filename += '-' + "".join(x for x in cn.value if x.isalnum())
     filename += ".pem"
     if os.path.exists(filename):
-        print("# WARNNG: exists: %s" % filename)
+        print(f"# WARNNG: exists: {filename}")
         return
-    print("# writing " + filename)
-    file = open(filename, "wb")
-    file.write(cert.public_bytes(serialization.Encoding.PEM))
-    file.close()
+    print(f"# writing: {filename}")
+    with open(filename, "wb") as file:
+        file.write(cert.public_bytes(serialization.Encoding.PEM))
 
 def parse_sigs(var, extract):
     data = var['data']
@@ -177,10 +177,10 @@ def parse_sigs(var, extract):
 
 def parse_vars(data, start, end, extract):
     pos = start
-    vars = {}
+    varlist = {}
     while pos < end:
-        (id, state, attr, count) = struct.unpack_from("=HBxLQ", data, pos)
-        if id != 0x55aa:
+        (magic, state, attr, count) = struct.unpack_from("=HBxLQ", data, pos)
+        if magic != 0x55aa:
             break
         (pk, nsize, dsize) = struct.unpack_from("=LLL", data, pos + 32)
 
@@ -200,7 +200,7 @@ def parse_vars(data, start, end, extract):
             var['time'] = parse_time(data, pos + 16)
             var['ascii_guid'] = parse_guid(var['guid'], 0)
             var['ascii_name'] = parse_unicode(var['name'], 0)
-            vars[var['ascii_name']] = var
+            varlist[var['ascii_name']] = var
 
             if (var['ascii_name'] == "PK"  or
                 var['ascii_name'] == "KEK" or
@@ -211,22 +211,22 @@ def parse_vars(data, start, end, extract):
 
         pos = pos + 44 + 16 + nsize + dsize
         pos = (pos + 3) & ~3 # align
-    return vars
+    return varlist
 
 def parse_varstore(file, data, start):
     guid = parse_guid(data, start)
-    (size, format, state) = struct.unpack_from("=LBB", data, start + 16)
+    (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
     print("varstore=%s size=0x%x format=0x%x state=0x%x" %
-          (guids.name(guid), size, format, state))
+          (guids.name(guid), size, storefmt, state))
     if guid != guids.AuthVars:
         print(f"ERROR: {file}: unknown varstore guid")
-        exit(1)
-    if format != 0x5a:
+        sys.exit(1)
+    if storefmt != 0x5a:
         print(f"ERROR: {file}: unknown varstore format")
-        exit(1)
+        sys.exit(1)
     if state != 0xfe:
         print(f"ERROR: {file}: unknown varstore state")
-        exit(1)
+        sys.exit(1)
     return (start + 16 + 12, start + size)
 
 def parse_volume(file, data):
@@ -237,10 +237,10 @@ def parse_volume(file, data):
           (guids.name(guid), vlen, rev, blocks, blksize, blocks * blksize))
     if sig != 0x4856465f:
         print(f"ERROR: {file}: not a firmware volume")
-        exit(1)
+        sys.exit(1)
     if guid != guids.NvData:
         print(f"ERROR: {file}: not a variable store")
-        exit(1)
+        sys.exit(1)
     return parse_varstore(file, data, hlen)
 
 
@@ -406,7 +406,7 @@ def var_create(vars, name):
     cfg = vars_settings.get(name)
     if not cfg:
         print("ERROR: unknown variable %s" % name)
-        exit(1)
+        sys.exit(1)
 
     print("# create variable %s" % name)
     var = var_template.copy()
@@ -528,7 +528,7 @@ def main():
 
     if not options.input:
         print("ERROR: no input file specified (try -h for help)")
-        exit(1)
+        sys.exit(1)
 
     print("# reading varstore from %s" % options.input)
     file = open(options.input, "rb")

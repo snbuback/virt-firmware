@@ -1,4 +1,5 @@
 #!/usr/bin/python
+""" dump content of ovmf firmware volumes """
 import os
 import sys
 import lzma

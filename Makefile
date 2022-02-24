@@ -1,7 +1,9 @@
 
 PYLINT_OPTS	:=
-#PYLINT_OPTS	+= --py-version 3.6
-PYLINT_OPTS	+= -d invalid-name
+#PYLINT_OPTS	+= --py-version 3.6	# matches setup.py declaration
+PYLINT_OPTS	+= -d invalid-name	# using efi-style names in some places
+PYLINT_OPTS	+= -d deprecated-module			# TODO
+PYLINT_OPTS	+= -d missing-function-docstring	# TODO
 
 default:
 	@echo "targets: lint install uninstall clean"
