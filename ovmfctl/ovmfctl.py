@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives import serialization
 
 from ovmfctl.efi import guids
 
-###############################################################################################################
+##################################################################################################
 # constants
 
 # variable attributes
@@ -89,7 +89,7 @@ var_template = {
 }
 
 
-###############################################################################################################
+##################################################################################################
 # parse stuff
 
 def parse_guid(data, offset):
@@ -112,7 +112,8 @@ def parse_unicode(data, offset):
     return ascii
 
 def parse_time(data, offset):
-    (year, month, day, hour, min, sec, ns, tz, dl) = struct.unpack_from("=HBBBBBxLhBx", data, offset)
+    (year, month, day, hour, min, sec, ns, tz, dl) = \
+        struct.unpack_from("=HBBBBBxLhBx", data, offset)
     time = {
         'year'  : year,
         'month' : month,
@@ -173,7 +174,7 @@ def parse_sigs(var, extract):
             'sigs'       : sigs,
         })
         pos += lsize
-    
+
 def parse_vars(data, start, end, extract):
     pos = start
     vars = {}
@@ -209,9 +210,9 @@ def parse_vars(data, start, end, extract):
                 parse_sigs(var, extract)
 
         pos = pos + 44 + 16 + nsize + dsize
-        pos = (pos + 3) & ~3; # align
+        pos = (pos + 3) & ~3 # align
     return vars
-    
+
 def parse_varstore(file, data, start):
     guid = parse_guid(data, start)
     (size, format, state) = struct.unpack_from("=LBB", data, start + 16)
@@ -230,7 +231,8 @@ def parse_varstore(file, data, start):
 
 def parse_volume(file, data):
     guid = parse_guid(data, 16)
-    (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = struct.unpack_from("=QLLHHHxBLL", data, 32)
+    (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
+        struct.unpack_from("=QLLHHHxBLL", data, 32)
     print("vol=%s vlen=0x%x rev=%d blocks=%dx%d (0x%x)" %
           (guids.name(guid), vlen, rev, blocks, blksize, blocks * blksize))
     if sig != 0x4856465f:
@@ -242,7 +244,7 @@ def parse_volume(file, data):
     return parse_varstore(file, data, hlen)
 
 
-###############################################################################################################
+##################################################################################################
 # print stuff, debug logging
 
 def print_hexdump(data, start, end):
@@ -275,7 +277,7 @@ def print_null(var):
     return
 
 def print_bool(var):
-    if (var['data'][0]):
+    if var['data'][0]:
         print("    bool ON")
     else:
         print("    bool off")
@@ -321,7 +323,7 @@ def print_vars(vars, verbose, hexdump):
     print("# ... done")
 
 
-###############################################################################################################
+##################################################################################################
 # write vars
 
 def update_data_from_siglists(var):
@@ -436,7 +438,7 @@ def var_add_cert(vars, name, owner, file, replace = False):
         var['siglists'] = []
 
     print("# add %s cert %s" % (name, file))
-    file = open(file, "rb");
+    file = open(file, "rb")
     pem = file.read()
     file.close()
     cert = x509.load_pem_x509_certificate(pem)
@@ -482,33 +484,43 @@ def var_add_dummy_dbx(vars, owner):
     var_update_time(var)
 
 
-###############################################################################################################
+##################################################################################################
 # main
 
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
-    parser.add_option('--extract-certs', dest = 'extract', action = 'store_true', default = False,
+    parser.add_option('--extract-certs', dest = 'extract',
+                      action = 'store_true', default = False,
                       help = 'extract all certificates')
-    parser.add_option('-d', '--delete', dest = 'delete', action = 'append', type = 'string',
-                      help = 'delete variable VAR, can be specified multiple times', metavar = 'VAR')
+    parser.add_option('-d', '--delete', dest = 'delete',
+                      action = 'append', type = 'string',
+                      help = 'delete variable VAR, can be specified multiple times',
+                      metavar = 'VAR')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
-                      help = 'set PK to x509 cert, loaded in pem format from FILE and with owner GUID',
+                      help = 'set PK to x509 cert, loaded in pem format ' +
+                      'from FILE and with owner GUID',
                       metavar = ('GUID', 'FILE'))
     parser.add_option('--add-kek', dest = 'kek',  action = 'append', nargs = 2,
-                      help = 'add x509 cert to KEK, loaded in pem format from FILE and with owner GUID, can be specified multiple times',
+                      help = 'add x509 cert to KEK, loaded in pem format ' +
+                      'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
     parser.add_option('--add-db', dest = 'db',  action = 'append', nargs = 2,
-                      help = 'add x509 cert to db, loaded in pem format from FILE and with owner GUID, can be specified multiple times',
+                      help = 'add x509 cert to db, loaded in pem format ' +
+                      'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
-    parser.add_option('--sb', '--secure-boot', dest = 'secureboot',  action = 'store_true', default = False,
+    parser.add_option('--sb', '--secure-boot', dest = 'secureboot',
+                      action = 'store_true', default = False,
                       help = 'enable secure boot mode')
-    parser.add_option('-p', '--print', dest = 'print', action = 'store_true', default = False,
+    parser.add_option('-p', '--print', dest = 'print',
+                      action = 'store_true', default = False,
                       help = 'print varstore')
-    parser.add_option('-v', '--verbose', dest = 'verbose', action = 'store_true', default = False,
+    parser.add_option('-v', '--verbose', dest = 'verbose',
+                      action = 'store_true', default = False,
                       help = 'print varstore verbosely')
-    parser.add_option('-x', '--hexdump', dest = 'hexdump', action = 'store_true', default = False,
+    parser.add_option('-x', '--hexdump', dest = 'hexdump',
+                      action = 'store_true', default = False,
                       help = 'print variable hexdumps')
     parser.add_option('-o', '--output', dest = 'output', type = 'string',
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
@@ -519,7 +531,7 @@ def main():
         exit(1)
 
     print("# reading varstore from %s" % options.input)
-    file = open(options.input, "rb");
+    file = open(options.input, "rb")
     infile = file.read()
     file.close()
 
@@ -560,9 +572,9 @@ def main():
 
         outfile += b''.zfill(end - len(outfile))
         outfile += infile[end:]
-        
+
         print("# writing varstore to %s" % options.output)
-        file = open(options.output, "wb");
+        file = open(options.output, "wb")
         file.write(outfile)
         file.close()
 

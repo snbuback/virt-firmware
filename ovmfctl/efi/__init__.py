@@ -1,1 +1,2 @@
-__all__ = [ "guid" ]
+""" efi helper modules """
+__all__ = [ "guids" ]
