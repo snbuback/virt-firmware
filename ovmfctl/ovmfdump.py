@@ -8,20 +8,6 @@ import optparse
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 
-def parse_unicode(data, offset):
-    pos = offset
-    name = ""
-    while True:
-        unichar = struct.unpack_from("=H", data, pos)
-        if unichar[0] == 0:
-            break
-        if unichar[0] >= 128:
-            name += "?"
-        else:
-            name += f'{unichar[0]:c}'
-        pos += 2
-    return name
-
 def parse_sev_type(typeid):
     if typeid == 1:
         return "MEM"
