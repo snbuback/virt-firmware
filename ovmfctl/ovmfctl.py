@@ -148,7 +148,6 @@ def parse_sigs(var, extract):
     while pos < len(data):
         guid = parse_guid(data, pos)
         (lsize, hsize, ssize) = struct.unpack_from("=LLL", data, pos + 16)
-        dpos = pos + 16 + 12 + hsize
         siglist = data[ pos + 16 + 12 + hsize : pos+lsize ]
         sigs = []
         spos = 0
@@ -216,8 +215,8 @@ def parse_vars(data, start, end, extract):
 def parse_varstore(file, data, start):
     guid = parse_guid(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
-    print("varstore=%s size=0x%x format=0x%x state=0x%x" %
-          (guids.name(guid), size, storefmt, state))
+    print(f'varstore={guids.name(guid)} size=0x{size:x} '
+          f'format=0x{storefmt:x} state=0x{state:x}')
     if guid != guids.AuthVars:
         print(f"ERROR: {file}: unknown varstore guid")
         sys.exit(1)
@@ -233,8 +232,8 @@ def parse_volume(file, data):
     guid = parse_guid(data, 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, 32)
-    print("vol=%s vlen=0x%x rev=%d blocks=%dx%d (0x%x)" %
-          (guids.name(guid), vlen, rev, blocks, blksize, blocks * blksize))
+    print(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
+          f'blocks={blocks}*{blksize} (0x{blocks * blksize:x})')
     if sig != 0x4856465f:
         print(f"ERROR: {file}: not a firmware volume")
         sys.exit(1)
@@ -248,25 +247,25 @@ def parse_volume(file, data):
 # print stuff, debug logging
 
 def print_hexdump(data, start, end):
-    hex = ""
-    ascii = ""
+    hstr = ""
+    astr = ""
     pos = start
     count = 0
     while True:
-        hex += "%02x " % data[start+count]
+        hstr += f'{data[start+count]:02x} '
         if (data[start+count] > 0x20 and
             data[start+count] < 0x7f):
-            ascii += "%c" % data[start+count]
+            astr += "%c" % data[start+count]
         else:
-            ascii += "."
+            astr += "."
         count += 1
         if count % 4 == 0:
-            hex += " "
-            ascii += " "
+            hstr += " "
+            astr += " "
         if count % 16 == 0 or start+count == end:
-            print("    %06x: %-52s %s" % (pos, hex, ascii))
-            hex = ""
-            ascii = ""
+            print("    %06x: %-52s %s" % (pos, hstr, astr))
+            hstr = ""
+            astr = ""
             pos += 16
         if count == 256 or start+count == end:
             break
