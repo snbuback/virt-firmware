@@ -77,9 +77,9 @@ def name(guid):
 
 def parse(data, offset):
     guid = uuid.UUID(bytes_le = data[offset:offset+16])
-    name = guid.urn.split(":")[2]
-    return name
+    nstr = guid.urn.split(":")[2]
+    return nstr
 
-def binary(name):
-    guid = uuid.UUID(f'urn:uuid:{name}')
+def binary(nstr):
+    guid = uuid.UUID(f'urn:uuid:{nstr}')
     return guid.bytes_le

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 """ dump content of ovmf firmware volumes """
-import os
 import sys
 import lzma
 import struct
@@ -298,7 +297,7 @@ def print_all_volumes(data, indent):
     while pos < len(data):
         size = print_one_volume(data, pos, indent)
         if size == 0:
-            print("%06x: %*sstop: volume size is zero" % (pos, indent, ""))
+            print(f'{pos:06x}: {"":{indent}s}stop: volume size is zero')
             break
         pos += size
 
