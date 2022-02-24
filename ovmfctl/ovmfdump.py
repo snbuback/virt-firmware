@@ -34,10 +34,10 @@ def print_hexdump(data, start, end, indent):
     pos = start
     count = 0
     while True:
-        hstr += f'{data[start+count]:02x} '
+        hstr += f"{data[start+count]:02x} "
         if (data[start+count] > 0x20 and
             data[start+count] < 0x7f):
-            astr += f'{data[start+count]:c}'
+            astr += f"{data[start+count]:c}"
         else:
             astr += "."
         count += 1
