@@ -247,51 +247,52 @@ def parse_volume(file, data):
 # print stuff, debug logging
 
 def print_hexdump(data, start, end):
-    hstr = ""
-    astr = ""
+    hstr = ''
+    astr = ''
     pos = start
     count = 0
     while True:
         hstr += f'{data[start+count]:02x} '
         if (data[start+count] > 0x20 and
             data[start+count] < 0x7f):
-            astr += "%c" % data[start+count]
+            astr += f'{data[start+count]:c}'
         else:
-            astr += "."
+            astr += '.'
         count += 1
         if count % 4 == 0:
-            hstr += " "
-            astr += " "
+            hstr += ' '
+            astr += ' '
         if count % 16 == 0 or start+count == end:
-            print("    %06x: %-52s %s" % (pos, hstr, astr))
-            hstr = ""
-            astr = ""
+            print(f'    {pos:06x}: {hstr:52s} {astr}')
+            hstr = ''
+            astr = ''
             pos += 16
         if count == 256 or start+count == end:
             break
     if start+count < end:
-        print("    %06x: [ ... ]" % (pos))
+        print(f'    {pos:06x}: [ ... ]')
 
 def print_null(var):
     return
 
 def print_bool(var):
     if var['data'][0]:
-        print("    bool ON")
+        print("    bool: ON")
     else:
-        print("    bool off")
+        print("    bool: off")
 
 def print_ascii(var):
-    print("    string %s" % var['data'].decode())
+    print(f"    string: {var['data'].decode()}")
 
 def print_siglists(var):
     for item in var['siglists']:
-        print("    list type=%s count=%d" % (guids.name(item['ascii_guid']),
-                                             len(item['sigs'])))
+        type = guids.name(item['ascii_guid'])
+        count = len(item['sigs'])
+        print(f'    list type={type} count={count}')
         cert = item['sigs'][0].get('x509')
         if cert:
             cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-            print("      x509 CN=%s" % cn.value)
+            print(f'      x509 CN=cn.value')
 
 print_funcs = {
     'SecureBootEnable' : print_bool,
@@ -302,8 +303,10 @@ print_funcs = {
 }
 
 def print_var(var, verbose, hexdump):
-    print("  - name=%s guid=%s size=%d" %
-          (var['ascii_name'], guids.name(var['ascii_guid']), len(var['data'])))
+    name = var['ascii_name']
+    gname = guids.name(var['ascii_guid'])
+    size = len(var['data'])
+    print(f'  - name={name} guid={gname} size={size}')
     func = print_funcs.get(var['ascii_name'], print_null)
     func(var)
     if var.get('siglists'):
