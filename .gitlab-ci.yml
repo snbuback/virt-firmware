@@ -1,7 +1,7 @@
 image: registry.fedoraproject.org/fedora:latest
 
 before_script:
-  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint edk2-aarch64 edk2-ovmf kernel-core
+  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint edk2-aarch64 edk2-ovmf
   - export PATH="${PATH}:${HOME}/.local/bin"
 
 pylint:
@@ -13,10 +13,6 @@ ovmfctl:
     - make install
     - ovmfctl --help
     - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd -p -x
-    - GUID="a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
-    - CERT="$(rpm -ql kernel-core | grep kernel-signing-ca.cer | head -1)"
-    - ls -l $CERT
-    - ovmfctl -i vars.fd -o vars.fd --add-db $GUID $CERT -p
 
 ovmfdump:
   script:
