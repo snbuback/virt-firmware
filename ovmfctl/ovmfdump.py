@@ -3,16 +3,10 @@
 import os
 import sys
 import lzma
-import uuid
 import struct
 import optparse
 
 from ovmfctl.efi import guids
-
-def parse_guid(data, offset):
-    guid = uuid.UUID(bytes_le = data[offset:offset+16])
-    name = guid.urn.split(":")[2]
-    return name
 
 def parse_unicode(data, offset):
     pos = offset
@@ -94,7 +88,7 @@ def print_sections(data, start, end, indent):
         extra = ""
         guid = ""
         if typeid == 0x02: # guid defined
-            guid = parse_guid(data, pos + hlen)
+            guid = guids.parse(data, pos + hlen)
             (doff, attr) = struct.unpack_from("=HH", data, pos + hlen + 16)
             extra += " [ subtype=%s doff=0x%x attr=0x%x ]" % (guids.name(guid), doff, attr)
         if typeid == 0x10: # pe32
@@ -138,7 +132,7 @@ def print_var(data, offset, indent):
     if magic != 0x55aa:
         return 0
     (pk, nsize, dsize) = struct.unpack_from("=LLL", data, offset + 32)
-    guid = parse_guid(data, offset + 44)
+    guid = guids.parse(data, offset + 44)
     name = parse_unicode(data, offset + 44 + 16)
     print("%06x: %*svar state=0x%x attr=0x%x nsize=0x%x dsize=0x%x [ %s ]" %
           (offset, indent, "", state, attr, nsize, dsize, name))
@@ -148,7 +142,7 @@ def print_var(data, offset, indent):
     return start - offset + dsize
 
 def print_varstore(data, start, end, indent):
-    guid = parse_guid(data, start)
+    guid = guids.parse(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
     print("%06x: %*svarstore=%s size=0x%x format=0x%x state=0x%x" %
           (start, indent, "", guids.name(guid), size, storefmt, state))
@@ -167,7 +161,7 @@ def print_resetvector(data, start, end, indent):
     sevpos = 0
     tdxpos = 0
     pos = end - 0x20
-    guid = parse_guid(data, pos - 0x10)
+    guid = guids.parse(data, pos - 0x10)
     if guid != guids.OvmfGuidList:
         return
     size = struct.unpack_from("=H", data, pos - 0x12)
@@ -176,7 +170,7 @@ def print_resetvector(data, start, end, indent):
           (pos, indent, "", guids.name(guid), size[0]))
     pos -= 0x12
     while pos - 0x12 >= start:
-        guid = parse_guid(data, pos - 0x10)
+        guid = guids.parse(data, pos - 0x10)
         size = struct.unpack_from("=H", data, pos - 0x12)
         print("%06x: %*sguid=%s size=0x%x" %
               (pos - 0x12, indent, "", guids.name(guid), size[0]))
@@ -213,7 +207,7 @@ def print_resetvector(data, start, end, indent):
                    parse_tdx_type(typeid), flags))
 
 def print_one_file(data, offset, indent):
-    guid = parse_guid(data, offset)
+    guid = guids.parse(data, offset)
     (typeid, attr, s1, s2, s3, state, xsize) = struct.unpack_from("=xxBBBBBBL", data, offset + 16)
     if attr & 0x01: # large file
         size = xsize
@@ -278,7 +272,7 @@ def print_all_files(data, start, end, indent):
         size = print_one_file(data, pos, indent)
 
 def print_one_volume(data, offset, indent):
-    guid = parse_guid(data, offset + 16)
+    guid = guids.parse(data, offset + 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, offset + 32)
     print("%06x: %*svol=%s vlen=0x%x rev=%d blocks=%dx%d (0x%x)" %

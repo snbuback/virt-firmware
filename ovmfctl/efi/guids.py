@@ -1,6 +1,8 @@
 #!/usr/bin/python
 """ efi guid database and helper functions """
 
+import uuid
+
 Ffs                          = "8c8ce578-8a3d-4f1c-9935-896185c32dd3"
 NvData                       = "fff12b8d-7696-4c8b-a985-2747075b4f50"
 AuthVars                     = "aaf32c78-947b-439a-a180-2e144ec37792"
@@ -72,3 +74,12 @@ def name(guid):
     if nstr is None:
         return guid
     return f'guid:{nstr}'
+
+def parse(data, offset):
+    guid = uuid.UUID(bytes_le = data[offset:offset+16])
+    name = guid.urn.split(":")[2]
+    return name
+
+def binary(name):
+    guid = uuid.UUID(f'urn:uuid:{name}')
+    return guid.bytes_le

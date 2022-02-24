@@ -2,7 +2,6 @@
 """ print and edit ovmf varstore files """
 import os
 import sys
-import uuid
 import struct
 import pprint
 import hashlib
@@ -93,11 +92,6 @@ var_template = {
 ##################################################################################################
 # parse stuff
 
-def parse_guid(data, offset):
-    guid = uuid.UUID(bytes_le = data[offset:offset+16])
-    name = guid.urn.split(":")[2]
-    return name
-
 def parse_unicode(data, offset):
     pos = offset
     name = ""
@@ -146,7 +140,7 @@ def parse_sigs(var, extract):
     pos = 0
     var['siglists'] = []
     while pos < len(data):
-        guid = parse_guid(data, pos)
+        guid = guids.parse(data, pos)
         (lsize, hsize, ssize) = struct.unpack_from("=LLL", data, pos + 16)
         siglist = data[ pos + 16 + 12 + hsize : pos+lsize ]
         sigs = []
@@ -155,7 +149,7 @@ def parse_sigs(var, extract):
             owner = siglist[ spos : spos + 16 ]
             sdata = siglist[ spos + 16 : spos + ssize ]
             sig = {
-                'ascii_guid' : parse_guid(owner, 0),
+                'ascii_guid' : guids.parse(owner, 0),
                 'guid'       : owner,
                 'data'       : sdata,
             }
@@ -197,7 +191,7 @@ def parse_vars(data, start, end, extract):
                                pos + 44 + 16 + nsize + dsize]
 
             var['time'] = parse_time(data, pos + 16)
-            var['ascii_guid'] = parse_guid(var['guid'], 0)
+            var['ascii_guid'] = guids.parse(var['guid'], 0)
             var['ascii_name'] = parse_unicode(var['name'], 0)
             varlist[var['ascii_name']] = var
 
@@ -213,7 +207,7 @@ def parse_vars(data, start, end, extract):
     return varlist
 
 def parse_varstore(file, data, start):
-    guid = parse_guid(data, start)
+    guid = guids.parse(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
     print(f'varstore={guids.name(guid)} size=0x{size:x} '
           f'format=0x{storefmt:x} state=0x{state:x}')
@@ -229,7 +223,7 @@ def parse_varstore(file, data, start):
     return (start + 16 + 12, start + size)
 
 def parse_volume(file, data):
-    guid = parse_guid(data, 16)
+    guid = guids.parse(data, 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, 32)
     print(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
@@ -381,10 +375,6 @@ def vars_delete(varlist, delete):
         else:
             print(f'# WARNING: variable {item} not found')
 
-def var_guid(name):
-    guid = uuid.UUID(f'urn:uuid:{name}')
-    return guid.bytes_le
-
 def var_name(astr):
     ustr = b''
     for char in list(astr):
@@ -414,7 +404,7 @@ def var_create(varlist, name):
     var = var_template.copy()
     var['ascii_guid'] = cfg['guid']
     var['ascii_name'] = name
-    var['guid']       = var_guid(cfg['guid'])
+    var['guid']       = guids.binary(cfg['guid'])
     var['name']       = var_name(name)
     var['attr']       = cfg['attr']
     varlist[name] = var
@@ -446,13 +436,13 @@ def var_add_cert(varlist, name, owner, file, replace = False):
     sigs = []
     sigs.append({
         'ascii_guid' : owner,
-        'guid'       : var_guid(owner),
+        'guid'       : guids.binary(owner),
         'data'       : cert.public_bytes(serialization.Encoding.DER),
         'x509'       : cert,
     })
     var['siglists'].append({
         'ascii_guid' : guids.EfiCertX509,
-        'guid'       : var_guid(guids.EfiCertX509),
+        'guid'       : guids.binary(guids.EfiCertX509),
         'header'     : b'',
         'sigs'       : sigs,
     })
@@ -472,12 +462,12 @@ def var_add_dummy_dbx(varlist, owner):
     sigs = []
     sigs.append({
         'ascii_guid' : owner,
-        'guid'       : var_guid(owner),
+        'guid'       : guids.binary(owner),
         'data'       : hashlib.sha256(b'').digest(),
     })
     var['siglists'].append({
         'ascii_guid' : guids.EfiCertSha256,
-        'guid'       : var_guid(guids.EfiCertSha256),
+        'guid'       : guids.binary(guids.EfiCertSha256),
         'header'     : b'',
         'sigs'       : sigs,
     })
