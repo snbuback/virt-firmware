@@ -13,7 +13,9 @@ ovmfctl:
     - make install
     - ovmfctl --help
     - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd -p -x
-    - ovmfctl -i vars.fd -o vars.fd --add-db a0baa8a3-041d-48a8-bc87-c36d121b5e3d /usr/share/doc/kernel-keys/*/kernel-signing-ca.cer -p
+    - GUID="a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
+    - CERT="$(rpm -ql kernel-core | grep kernel-signing-ca.cer | head -1)"
+    - ovmfctl -i vars.fd -o vars.fd --add-db $GUID $CERT -p
 
 ovmfdump:
   script:
