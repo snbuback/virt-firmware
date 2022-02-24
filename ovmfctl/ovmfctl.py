@@ -432,7 +432,10 @@ def var_add_cert(varlist, name, owner, file, replace = False):
     print(f'# add {name} cert {file}')
     with open(file, "rb") as f:
         pem = f.read()
-    cert = x509.load_pem_x509_certificate(pem)
+    if b'-----BEGIN' in pem:
+        cert = x509.load_pem_x509_certificate(pem)
+    else:
+        cert = x509.load_der_x509_certificate(pem)
     sigs = []
     sigs.append({
         'ascii_guid' : owner,
