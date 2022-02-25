@@ -394,8 +394,10 @@ def var_set_bool(varlist, name, value):
         var = var_create(varlist, name)
 
     if value:
+        print(f'# set variable {name}: True')
         var['data'] = b'\x01'
     else:
+        print(f'# set variable {name}: False')
         var['data'] = b'\x00'
     var_update_time(var)
 
