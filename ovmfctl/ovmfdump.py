@@ -9,24 +9,21 @@ from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 
 def parse_sev_type(typeid):
-    if typeid == 1:
-        return "MEM"
-    if typeid == 2:
-        return "Secrets"
-    if typeid == 3:
-        return "CPUID"
-    return f'{typeid}'
+    id2name = {
+        1 : "NEN",
+        2 : "Secrets",
+        3 : "CPUID",
+    }
+    return id2name.get(typeid, f'{typeid}')
 
 def parse_tdx_type(typeid):
-    if typeid == 0:
-        return "BFV (code)"
-    if typeid == 1:
-        return "CFV (vars)"
-    if typeid == 2:
-        return "TD Hob"
-    if typeid == 3:
-        return "MEM"
-    return f'{typeid}'
+    id2name = {
+        0 : "BFV (code)",
+        1 : "CFV (vars)",
+        2 : "TD Hob",
+        3 : "MEM",
+    }
+    return id2name.get(typeid, f'{typeid}')
 
 def print_hexdump(data, start, end, indent):
     hstr = ""
