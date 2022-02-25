@@ -458,6 +458,11 @@ def var_add_dummy_dbx(varlist, owner):
 ##################################################################################################
 # main
 
+def enable_secureboot(varlist):
+    var_add_dummy_dbx(varlist, guids.OvmfEnrollDefaultKeys)
+    var_set_bool(varlist, 'SecureBootEnable', True)
+    var_set_bool(varlist, 'CustomMode', False)
+
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
@@ -524,9 +529,7 @@ def main():
             var_add_cert(varlist, 'db', item[0], item[1])
 
     if options.secureboot:
-        var_add_dummy_dbx(varlist, "a0baa8a3-041d-48a8-bc87-c36d121b5e3d")
-        var_set_bool(varlist, 'SecureBootEnable', True)
-        var_set_bool(varlist, 'CustomMode', False)
+        enable_secureboot(varlist)
 
     if options.print:
         print_vars(varlist, options.verbose, options.hexdump)

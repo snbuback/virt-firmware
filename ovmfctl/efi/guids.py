@@ -17,6 +17,9 @@ EfiCustomModeEnable          = "c076ec0c-7028-4399-a072-71ee5c448b9f"
 EfiCertX509                  = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
 EfiCertSha256                = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
 
+MicrosoftVendor              = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+OvmfEnrollDefaultKeys        = "a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
+
 OvmfGuidList                 = "96b582de-1fb2-45f7-baea-a366c55a082d"
 OvmfSevMetadataOffset        = "dc886566-984a-4798-a75e-5585a7bf67cc"
 TdxMetadataOffset            = "e47a6535-984a-4798-865e-4685a7bf8ec2"
@@ -53,8 +56,8 @@ name_table = {
     EfiCertSha256                          : "EfiCertSha256",
 
     # signature owner
-    "77fa9abd-0359-4d32-bd60-28f4e78f784b" : "MicrosoftVendor",
-    "a0baa8a3-041d-48a8-bc87-c36d121b5e3d" : "OvmfEnrollDefaultKeys",
+    MicrosoftVendor                        : "MicrosoftVendor",
+    OvmfEnrollDefaultKeys                  : "OvmfEnrollDefaultKeys",
 
     # ovmf metadata
     OvmfGuidList                           : "OvmfGuidList",
