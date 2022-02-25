@@ -260,6 +260,18 @@ def print_bool(var):
     else:
         print("    bool: off")
 
+def print_boot_entry(var):
+    name = ucs16.from_ucs16(var['data'], 6)
+    print(f'    boot entry: name={name}')
+
+def print_boot_list(var):
+    bootlist = []
+    for pos in range(len(var['data']) >> 1):
+        nr = struct.unpack_from('=H', var['data'], pos * 2)
+        bootlist.append(f'{nr[0]:04d}')
+    desc= ", ".join(bootlist)
+    print(f'    boot order: {desc}')
+
 def print_ascii(var):
     print(f"    string: {var['data'].decode()}")
 
@@ -279,6 +291,19 @@ print_funcs = {
 
     'Lang'             : print_ascii,
     'PlatformLang'     : print_ascii,
+
+    'BootOrder'        : print_boot_list,
+    'BootNext'         : print_boot_list,
+    'Boot0000'         : print_boot_entry,
+    'Boot0001'         : print_boot_entry,
+    'Boot0002'         : print_boot_entry,
+    'Boot0003'         : print_boot_entry,
+    'Boot0004'         : print_boot_entry,
+    'Boot0005'         : print_boot_entry,
+    'Boot0006'         : print_boot_entry,
+    'Boot0007'         : print_boot_entry,
+    'Boot0008'         : print_boot_entry,
+    'Boot0009'         : print_boot_entry,
 }
 
 def print_var(var, verbose, hexdump):
