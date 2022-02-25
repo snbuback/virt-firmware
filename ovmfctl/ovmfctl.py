@@ -419,7 +419,7 @@ def var_add_cert(varlist, name, owner, file, replace = False):
     certdata = cert.public_bytes(serialization.Encoding.DER)
     for c in var['siglists']:
         if c['sigs'][0]['data'] == certdata:
-            print(f'# certificate already present, skipping')
+            print('# certificate already present, skipping')
             return
     sigs = []
     sigs.append({
@@ -472,19 +472,24 @@ def enable_secureboot(varlist):
     var_set_bool(varlist, 'CustomMode', False)
 
 def platform_redhat(varlist):
-    redhat_pk = pkg_resources.resource_filename('ovmfctl', 'certs/RedHatSecureBootPKKEKkey1.pem')
+    redhat_pk = pkg_resources.resource_filename('ovmfctl',
+                                                'certs/RedHatSecureBootPKKEKkey1.pem')
     var_add_cert(varlist, 'PK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
     var_add_cert(varlist, 'KEK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
     var_add_dummy_dbx(varlist, guids.OvmfEnrollDefaultKeys)
 
 def microsoft_keys(varlist):
-    ms_kek = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftCorporationKEKCA2011.pem')
-    ms_win = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftWindowsProductionPCA2011.pem')
-    ms_3rd = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftCorporationUEFICA2011.pem')
+    ms_kek = pkg_resources.resource_filename('ovmfctl',
+                                             'certs/MicrosoftCorporationKEKCA2011.pem')
+    ms_win = pkg_resources.resource_filename('ovmfctl',
+                                             'certs/MicrosoftWindowsProductionPCA2011.pem')
+    ms_3rd = pkg_resources.resource_filename('ovmfctl',
+                                             'certs/MicrosoftCorporationUEFICA2011.pem')
     var_add_cert(varlist, 'KEK', guids.MicrosoftVendor, ms_kek, False)
     var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_win, False) # windows
     var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
 
+# pylint: disable=too-many-branches
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
