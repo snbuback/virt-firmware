@@ -33,6 +33,7 @@ package:
       - rpms
 
 pages:
+  stage: publish
   dependencies:
     - package
   script:
