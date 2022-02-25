@@ -538,6 +538,10 @@ def main():
                       help = 'add x509 cert to db, loaded in pem format ' +
                       'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
+    parser.add_option('--add-mok', dest = 'mok',  action = 'append', nargs = 2,
+                      help = 'add x509 cert to MokList, loaded in pem format ' +
+                      'from FILE and with owner GUID, can be specified multiple times',
+                      metavar = ('GUID', 'FILE'))
     parser.add_option('--enroll-redhat', dest = 'redhat',
                       action = 'store_true', default = False,
                       help = 'enroll default certificates for redhat platform')
@@ -586,6 +590,10 @@ def main():
     if options.db:
         for item in options.db:
             var_add_cert(varlist, 'db', item[0], item[1])
+
+    if options.mok:
+        for item in options.mok:
+            var_add_cert(varlist, 'MokList', item[0], item[1])
 
     if options.secureboot:
         enable_secureboot(varlist)
