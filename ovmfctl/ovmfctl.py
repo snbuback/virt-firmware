@@ -414,11 +414,16 @@ def var_add_cert(varlist, name, owner, file, replace = False):
         cert = x509.load_pem_x509_certificate(pem)
     else:
         cert = x509.load_der_x509_certificate(pem)
+    certdata = cert.public_bytes(serialization.Encoding.DER)
+    for c in var['siglists']:
+        if c['sigs'][0]['data'] == certdata:
+            print(f'# certificate already present, skipping')
+            return
     sigs = []
     sigs.append({
         'ascii_guid' : owner,
         'guid'       : guids.binary(owner),
-        'data'       : cert.public_bytes(serialization.Encoding.DER),
+        'data'       : certdata,
         'x509'       : cert,
     })
     var['siglists'].append({
