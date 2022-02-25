@@ -35,8 +35,9 @@ package:
 pages:
   stage: deploy
   script:
-    - tree -T "$CI_PROJECT_NAME rpms" --charset utf8 -H . rpms > index.html
+    - mv rpms public
+    - tree -T "$CI_PROJECT_NAME rpms" --charset utf8 -H . public > index.html
     - mv index.html rpms
   artifacts:
     paths:
-      - rpms/
+      - public/
