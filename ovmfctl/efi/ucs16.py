@@ -21,6 +21,19 @@ def from_ucs16(data, offset):
         pos += 2
     return astr
 
+def get_size(data, offset):
+    """
+    return ucs-16 string size, including the
+    terminating NULL word, in bytes.
+    """
+    pos = offset
+    while True:
+        unichar = struct.unpack_from("=H", data, pos)
+        pos += 2
+        if unichar[0] == 0:
+            break
+    return pos - offset
+
 def to_ucs16(astr):
     """
     convert ascii string to ucs-16 bytes

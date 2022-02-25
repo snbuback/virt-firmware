@@ -245,7 +245,7 @@ def print_hexdump(data, start, end):
             hstr += ' '
             astr += ' '
         if count % 16 == 0 or start+count == end:
-            print(f'    {pos:06x}: {hstr:52s} {astr}')
+            print(f'    {pos:06x}:  {hstr:52s} {astr}')
             hstr = ''
             astr = ''
             pos += 16
@@ -261,8 +261,10 @@ def print_bool(var):
         print("    bool: off")
 
 def print_boot_entry(var):
+    (attr, pathsize) = struct.unpack_from('=LH', var['data'])
     name = ucs16.from_ucs16(var['data'], 6)
-    print(f'    boot entry: name={name}')
+    pathoffset = ucs16.get_size(var['data'], 6) + 6
+    print(f'    boot entry: name={name} pathoffset=0x{pathoffset:x}')
 
 def print_boot_list(var):
     bootlist = []
