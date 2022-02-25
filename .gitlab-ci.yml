@@ -31,4 +31,4 @@ package:
   artifacts:
     paths:
       - rpms
-      - *.tar.gz
+      - ovmfctl*.tar.gz
