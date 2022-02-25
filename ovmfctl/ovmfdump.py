@@ -192,6 +192,25 @@ def print_resetvector(data, start, end, indent):
                   f'mbase=0x{membase:x} msize=0x{memsize:x} '
                   f'type={parse_tdx_type(typeid)}, flags=0x{flags:x}')
 
+def parse_file_type(typeid):
+    id2name = {
+        0x02 : "freeform",
+        0x03 : "sec-core",
+        0x04 : "pei-core",
+        0x05 : "dxe-core",
+        0x06 : "peim",
+        0x07 : "driver",
+        0x09 : "application",
+        0x0a : "smm",
+        0x0b : "fw-volume",
+    }
+
+    if id2name.get(typeid):
+        return (id2name.get(typeid), True)
+    if typeid == 0xf0:
+        return ("padding", False)
+    return (f'0x{typeid:x}', False)
+
 def print_one_file(data, offset, indent):
     guid = guids.parse(data, offset)
     (typeid, attr, s1, s2, s3, state, xsize) = struct.unpack_from("=xxBBBBBBL", data, offset + 16)
@@ -202,38 +221,7 @@ def print_one_file(data, offset, indent):
         size = s1 | (s2 << 8) | (s3 << 16)
         hlen = 8
 
-    typename = f'0x{typeid:x}'
-    sections = False
-    if typeid == 0xf0:
-        typename = "padding"
-    if typeid == 0x02:
-        typename = "freeform"
-        sections = True
-    if typeid == 0x03:
-        typename = "sec-core"
-        sections = True
-    if typeid == 0x04:
-        typename = "pei-core"
-        sections = True
-    if typeid == 0x05:
-        typename = "dxe-core"
-        sections = True
-    if typeid == 0x06:
-        typename = "peim"
-        sections = True
-    if typeid == 0x07:
-        typename = "driver"
-        sections = True
-    if typeid == 0x09:
-        typename = "application"
-        sections = True
-    if typeid == 0x0a:
-        typename = "smm"
-        sections = True
-    if typeid == 0x0b:
-        typename = "fw-volume"
-        sections = True
-
+    (typename, sections) = parse_file_type(typeid)
     print(f'{offset:06x}: {"":{indent}s}vol={guids.name(guid)} '
           f'type={typename} size=0x{size:x}')
     if sections:

@@ -3,6 +3,7 @@ PYLINT_OPTS	:=
 #PYLINT_OPTS	+= --py-version 3.6	# matches setup.py declaration
 PYLINT_OPTS	+= -d invalid-name	# using efi-style names in some places
 PYLINT_OPTS	+= -d unused-variable	# happens often when unpacking structss
+PYLINT_OPTS	+= -d too-many-locals	# happens when unpacking structss
 PYLINT_OPTS	+= -d deprecated-module			# TODO
 PYLINT_OPTS	+= -d missing-function-docstring	# TODO
 
