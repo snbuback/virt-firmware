@@ -12,7 +12,8 @@ ovmfctl:
   script:
     - make install
     - ovmfctl --help
-    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd -p -x
+    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -p -x
+    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd --enroll-redhat --enable-secureboot
 
 ovmfdump:
   script:
