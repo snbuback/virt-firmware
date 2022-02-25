@@ -1,2 +1,2 @@
 """ efi helper modules """
-__all__ = [ "guids" ]
+__all__ = [ "guids", "ucs16" ]
