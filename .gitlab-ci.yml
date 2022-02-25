@@ -31,13 +31,12 @@ package:
   artifacts:
     paths:
       - rpms
-      - ovmfctl*.tar.gz
 
 pages:
   stage: deploy
   script:
     - mkdir public
-    - mv -v rpms ovmfctl*.tar.gz public
+    - mv -v rpms public
     - tree -T "$CI_PROJECT_NAME rpms" --charset utf8 -H . public > index.html
     - mv index.html public
   artifacts:
