@@ -514,7 +514,7 @@ def microsoft_keys(varlist):
     var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_win, False) # windows
     var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches,too-many-statements
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
