@@ -37,7 +37,7 @@ pages:
   dependencies:
     - package
   only:
-    -tags
+    - tags
   script:
     - mv rpms public
     - tree -T "$CI_PROJECT_NAME rpms" --charset utf8 -H . public > index.html
