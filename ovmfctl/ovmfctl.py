@@ -7,6 +7,7 @@ import pprint
 import hashlib
 import optparse
 import datetime
+import pkg_resources
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -463,6 +464,20 @@ def enable_secureboot(varlist):
     var_set_bool(varlist, 'SecureBootEnable', True)
     var_set_bool(varlist, 'CustomMode', False)
 
+def platform_redhat(varlist):
+    redhat_pk = pkg_resources.resource_filename('ovmfctl', 'certs/RedHatSecureBootPKKEKkey1.pem')
+    var_add_cert(varlist, 'PK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
+    var_add_cert(varlist, 'KEK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
+    var_add_dummy_dbx(varlist, guids.OvmfEnrollDefaultKeys)
+
+def microsoft_keys(varlist):
+    ms_kek = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftCorporationKEKCA2011.pem')
+    ms_win = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftWindowsProductionPCA2011.pem')
+    ms_3rd = pkg_resources.resource_filename('ovmfctl', 'certs/MicrosoftCorporationUEFICA2011.pem')
+    var_add_cert(varlist, 'KEK', guids.MicrosoftVendor, ms_kek, False)
+    var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_win, False) # windows
+    var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
+
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
@@ -486,6 +501,9 @@ def main():
                       help = 'add x509 cert to db, loaded in pem format ' +
                       'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
+    parser.add_option('--enroll-redhat', dest = 'redhat',
+                      action = 'store_true', default = False,
+                      help = 'enroll default certificates for redhat platform')
     parser.add_option('--sb', '--secure-boot', dest = 'secureboot',
                       action = 'store_true', default = False,
                       help = 'enable secure boot mode')
@@ -516,6 +534,10 @@ def main():
 
     if options.delete:
         vars_delete(varlist, options.delete)
+
+    if options.redhat:
+        platform_redhat(varlist)
+        microsoft_keys(varlist)
 
     if options.pk:
         var_add_cert(varlist, 'PK', options.pk[0], options.pk[1], True)
