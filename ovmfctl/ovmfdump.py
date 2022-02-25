@@ -49,6 +49,30 @@ def print_hexdump(data, start, end, indent):
         if count == 64 or start+count == end:
             break
 
+def section_desc(data, start, typeid):
+    id2name = {
+        0x10 : "pe32",
+        0x13 : "dxe depex",
+        0x17 : "firmware volume",
+        0x19 : "raw",
+        0x1b : "pei depex",
+        0x1c : "smm depex",
+    }
+    if id2name.get(typeid):
+        return f' [ {id2name.get(typeid)} ]'
+    if typeid == 0x02: # guid defined
+        guid = guids.parse(data, start)
+        (doff, attr) = struct.unpack_from("=HH", data, start + 16)
+        return f' [ subtype={guids.name(guid)} doff=0x{doff:x} attr=0x{attr:x} ]'
+    if typeid == 0x14: # version
+        build = struct.unpack_from("=H", data, start)
+        name = ucs16.from_ucs16(data, start + 2)
+        return f' [ build={build[0]} version={name} ]'
+    if typeid == 0x15: # user interface
+        name = ucs16.from_ucs16(data, start)
+        return f' [ name={name} ]'
+    return ""
+
 def print_sections(data, start, end, indent):
     pos = start
     while True:
@@ -68,41 +92,18 @@ def print_sections(data, start, end, indent):
                   f'too big (0x{pos:x} + 0x{size:x} > 0x{end:x})')
             break
 
-        extra = ""
-        guid = ""
-        if typeid == 0x02: # guid defined
-            guid = guids.parse(data, pos + hlen)
-            (doff, attr) = struct.unpack_from("=HH", data, pos + hlen + 16)
-            extra += f' [ subtype={guids.name(guid)} doff=0x{doff:x} attr=0x{attr:x} ]'
-        if typeid == 0x10: # pe32
-            extra += " [ pe32 ]"
-        if typeid == 0x13: # depex
-            extra += " [ dxe depex ]"
-        if typeid == 0x14: # version
-            build = struct.unpack_from("=H", data, pos + hlen)
-            name = ucs16.from_ucs16(data, pos + hlen + 2)
-            extra += f' [ build={build[0]} version={name} ]'
-        if typeid == 0x15: # user interface
-            name = ucs16.from_ucs16(data, pos + hlen)
-            extra += f' [ name={name} ]'
-        if typeid == 0x17: # firmware volume
-            extra += " [ firmware volume ]"
-        if typeid == 0x19: # raw
-            name = ucs16.from_ucs16(data, pos + hlen)
-            extra += " [ raw ]"
-        if typeid == 0x1b: # pei depex
-            extra += " [ pei depex ]"
-        if typeid == 0x1c: # smm depex
-            extra += " [ smm depex ]"
-
+        extra = section_desc(data, pos + hlen, typeid)
         print(f'{pos:06x}: {"":{indent}s}section '
               f'type=0x{typeid:x} size=0x{size:x}{extra}')
 
-        if guid == guids.LzmaCompress:
-            unxz = lzma.decompress(data[pos+doff:pos+size])
-            print(f'--xz--: {"":{indent}s}compressed sections follow')
-            print_sections(unxz, 0, len(unxz), indent + 2)
-            print(f'--xz--: {"":{indent}s}end')
+        if typeid == 0x02: # guid defined
+            guid = guids.parse(data, pos + hlen)
+            (doff, attr) = struct.unpack_from("=HH", data, pos + hlen + 16)
+            if guid == guids.LzmaCompress:
+                unxz = lzma.decompress(data[pos+doff:pos+size])
+                print(f'--xz--: {"":{indent}s}compressed sections follow')
+                print_sections(unxz, 0, len(unxz), indent + 2)
+                print(f'--xz--: {"":{indent}s}end')
         if typeid == 0x17: # firmware volume
             print_one_volume(data, pos + hlen, indent + 1)
 
