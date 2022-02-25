@@ -1,7 +1,7 @@
 image: registry.fedoraproject.org/fedora:latest
 
 before_script:
-  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint edk2-aarch64 edk2-ovmf
+  - dnf install -y make python3-pip python3-setuptools python3-cryptography python3-pytest pylint edk2-aarch64 edk2-ovmf tree
   - export PATH="${PATH}:${HOME}/.local/bin"
 
 pylint:
