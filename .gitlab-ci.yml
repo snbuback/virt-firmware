@@ -39,4 +39,4 @@ pages:
     - mv index.html rpms
   artifacts:
     paths:
-      - rpms
+      - rpms/
