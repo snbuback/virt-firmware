@@ -13,7 +13,7 @@ ovmfctl:
     - make install
     - ovmfctl --help
     - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump
-    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd -o vars.fd --enroll-redhat --secure-boot
+    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars.fd --enroll-redhat --secure-boot
 
 ovmfdump:
   script:
