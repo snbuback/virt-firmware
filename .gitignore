@@ -2,4 +2,5 @@ build
 *.egg-info
 *.tar.gz
 rpms
+dist
 __pycache__
