@@ -26,7 +26,7 @@ ovmfdump:
 
 package:
   script:
-    - dnf install -y fedora-packager pyp2rpm createrepo python3-devel
+    - dnf install -y fedora-packager pyp2rpm createrepo python3-devel python3-build
     - make package
   artifacts:
     paths:
