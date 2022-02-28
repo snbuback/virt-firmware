@@ -37,8 +37,8 @@ pages:
   stage: deploy
   dependencies:
     - package
-#  only:
-#    - tags
+  only:
+    - tags
   script:
     - mkdir public
     - mv dist rpms public
