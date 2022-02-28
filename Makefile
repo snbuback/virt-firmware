@@ -8,8 +8,7 @@ PYLINT_OPTS	+= -d deprecated-module			# TODO
 PYLINT_OPTS	+= -d missing-function-docstring	# TODO
 
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
-PKG_VERNAME	:= ovmfctl-$(PKG_VERSION)
-PKG_TARBALL	:= $(PKG_VERNAME).tar.gz
+PKG_TARBALL	:= dist/ovmfctl-$(PKG_VERSION).tar.gz
 
 default:
 	@echo "targets: lint install uninstall clean"
@@ -18,7 +17,8 @@ lint pylint:
 	pylint $(PYLINT_OPTS) ovmfctl/
 
 tarball $(PKG_TARBALL):
-	git archive --prefix=$(PKG_VERNAME)/ HEAD | gzip > $(PKG_TARBALL)
+	rm -rf dist
+	python3 -m build
 
 rpm package: $(PKG_TARBALL)
 	rm -rf rpms
@@ -37,6 +37,6 @@ uninstall:
 	python3 -m pip uninstall ovmfctl
 
 clean:
-	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms
+	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
 	rm -rf *~ ovmfctl/*~ ovmfctl/efi/*~
 	rm -rf *~ ovmfctl/__pycache__  ovmfctl/efi/__pycache__

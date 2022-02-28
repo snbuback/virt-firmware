@@ -30,16 +30,18 @@ package:
     - make package
   artifacts:
     paths:
+      - dist
       - rpms
 
 pages:
   stage: deploy
   dependencies:
     - package
-  only:
-    - tags
+#  only:
+#    - tags
   script:
-    - mv rpms public
+    - mkdir public
+    - mv dist rpms public
     - tree -T "$CI_PROJECT_NAME rpms" --charset utf8 -H . public > index.html
     - mv index.html public
   artifacts:
