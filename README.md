@@ -22,7 +22,7 @@ Enroll certifiactes:
 ovmfctl --input <template> \
         --output <vars> \
         --enroll-redhat \
-        --enable-secureboot
+        --secure-boot
 ```
 
 Try `ovmfctl --help` for more usage information.
