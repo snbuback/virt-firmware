@@ -260,6 +260,7 @@ def print_bool(var):
     else:
         print("    bool: off")
 
+# pylint: disable=too-many-return-statements,too-many-branches
 def device_path_elem(devtype, subtype, data):
     if devtype == 0x01:
         if subtype == 0x01:
@@ -279,16 +280,16 @@ def device_path_elem(devtype, subtype, data):
             (pun, lun) = struct.unpack_from('=HH', data)
             return f'SCSI(pun={pun},lun={lun})'
         if subtype == 0x0b:
-            return f'MAC()'
+            return 'MAC()'
         if subtype == 0x0c:
-            return f'IPv4()'
+            return 'IPv4()'
         if subtype == 0x0d:
-            return f'IPv6()'
+            return 'IPv6()'
         if subtype == 0x12:
             (port, mul, lun) = struct.unpack_from('=HHH', data)
             return f'SATA(port={port})'
         if subtype == 0x18:
-            return f'URI()'
+            return 'URI()'
         return f'Msg(subtype=0x{subtype:x})'
     if devtype == 0x04:
         if subtype == 0x01:
