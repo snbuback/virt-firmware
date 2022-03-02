@@ -24,6 +24,8 @@ OvmfGuidList                 = "96b582de-1fb2-45f7-baea-a366c55a082d"
 OvmfSevMetadataOffset        = "dc886566-984a-4798-a75e-5585a7bf67cc"
 TdxMetadataOffset            = "e47a6535-984a-4798-865e-4685a7bf8ec2"
 
+NotValid                     = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+
 name_table = {
     # firmware volumes
     Ffs                                    : "Ffs",
@@ -69,7 +71,7 @@ name_table = {
     "00f771de-1a7e-4fcb-890e-68c77e2fb44e" : "SevProcessorReset",
 
     # misc
-    "ffffffff-ffff-ffff-ffff-ffffffffffff" : "NotValid",
+    NotValid                               : "NotValid",
 }
 
 def name(guid):
