@@ -15,7 +15,7 @@ EfiSecureBootEnableDisable   = "f0a30bc7-af08-4556-99c4-001009c93a44"
 EfiCustomModeEnable          = "c076ec0c-7028-4399-a072-71ee5c448b9f"
 
 EfiCertX509                  = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
-EfiCertSha256                = "a5c059a1-94e4-4aa7-87b5-ab155c2bf072"
+EfiCertSha256                = "c1c41626-504c-4092-aca9-41f936934328"
 
 MicrosoftVendor              = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 OvmfEnrollDefaultKeys        = "a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
