@@ -69,7 +69,6 @@ vars_settings = {
 }
 
 var_template = {
-    'ascii_guid' : 'FIXME',
     'ascii_name' : 'FIXME',
     'guid'       : b'FIXME',
     'name'       : b'FIXME',
@@ -128,20 +127,19 @@ def parse_sigs(var, extract):
     pos = 0
     var['siglists'] = []
     while pos < len(data):
-        guid = guids.parse(data, pos)
+        guid = guids.parse_bin(data, pos)
         (lsize, hsize, ssize) = struct.unpack_from("=LLL", data, pos + 16)
         siglist = data[ pos + 16 + 12 + hsize : pos+lsize ]
         sigs = []
         spos = 0
         while spos < len(siglist):
-            owner = siglist[ spos : spos + 16 ]
+            owner = guids.parse_bin(siglist, pos)
             sdata = siglist[ spos + 16 : spos + ssize ]
             sig = {
-                'ascii_guid' : guids.parse(owner, 0),
-                'guid'       : owner,
-                'data'       : sdata,
+                'guid' : owner,
+                'data' : sdata,
             }
-            if guid == guids.EfiCertX509:
+            if str(guid) == guids.EfiCertX509:
                 sig['x509'] = x509.load_der_x509_certificate(sdata)
                 if extract:
                     extract_cert(var, sig['ascii_guid'], sig['x509'])
@@ -149,10 +147,9 @@ def parse_sigs(var, extract):
             spos += ssize
 
         var['siglists'].append({
-            'ascii_guid' : guid,
-            'guid'       : data[ pos : pos + 16 ],
-            'header'     : data[ pos + 16 + 12 : pos + 16 + 12 + hsize ],
-            'sigs'       : sigs,
+            'guid'   : guid,
+            'header' : data[ pos + 16 + 12 : pos + 16 + 12 + hsize ],
+            'sigs'   : sigs,
         })
         pos += lsize
 
@@ -171,15 +168,13 @@ def parse_vars(data, start, end, extract):
                 'count' : count,
                 'pkidx' : pk,
             }
-            var['guid'] = data[pos + 44 :
-                               pos + 44 + 16]
+            var['guid'] = guids.parse_bin(data, pos + 44)
             var['name'] = data[pos + 44 + 16 :
                                pos + 44 + 16 + nsize]
             var['data'] = data[pos + 44 + 16 + nsize :
                                pos + 44 + 16 + nsize + dsize]
 
             var['time'] = parse_time(data, pos + 16)
-            var['ascii_guid'] = guids.parse(var['guid'], 0)
             var['ascii_name'] = ucs16.from_ucs16(var['name'], 0)
             varlist[var['ascii_name']] = var
 
@@ -195,11 +190,11 @@ def parse_vars(data, start, end, extract):
     return varlist
 
 def parse_varstore(file, data, start):
-    guid = guids.parse(data, start)
+    guid = guids.parse_bin(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
     print(f'varstore={guids.name(guid)} size=0x{size:x} '
           f'format=0x{storefmt:x} state=0x{state:x}')
-    if guid != guids.AuthVars:
+    if str(guid) != guids.AuthVars:
         print(f"ERROR: {file}: unknown varstore guid")
         sys.exit(1)
     if storefmt != 0x5a:
@@ -211,7 +206,7 @@ def parse_varstore(file, data, start):
     return (start + 16 + 12, start + size)
 
 def parse_volume(file, data):
-    guid = guids.parse(data, 16)
+    guid = guids.parse_bin(data, 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, 32)
     print(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
@@ -219,7 +214,7 @@ def parse_volume(file, data):
     if sig != 0x4856465f:
         print(f"ERROR: {file}: not a firmware volume")
         sys.exit(1)
-    if guid != guids.NvData:
+    if str(guid) != guids.NvData:
         print(f"ERROR: {file}: not a variable store")
         sys.exit(1)
     return parse_varstore(file, data, hlen)
@@ -267,7 +262,7 @@ def device_path_elem(devtype, subtype, data):
             (func, dev) = struct.unpack_from('=BB', data)
             return f'PCI(device={dev:02x}:{func:x})'
         if subtype == 0x04:
-            guid = guids.parse(data, 0)
+            guid = guids.parse_bin(data, 0)
             return f'VendorHW({guid})'
         return f'HW(subtype=0x{subtype:x})'
     if devtype == 0x02:
@@ -299,10 +294,10 @@ def device_path_elem(devtype, subtype, data):
             path = ucs16.from_ucs16(data, 0)
             return f'FilePath({path})'
         if subtype == 0x06:
-            guid = guids.parse(data, 0)
+            guid = guids.parse_bin(data, 0)
             return f'FvFileName({guid})'
         if subtype == 0x07:
-            guid = guids.parse(data, 0)
+            guid = guids.parse_bin(data, 0)
             return f'FvName({guid})'
         return f'Media(subtype=0x{subtype:x})'
     return f'Unknown(type=0x{devtype:x},subtype=0x{subtype:x})'
@@ -339,7 +334,7 @@ def print_ascii(var):
 
 def print_siglists(var):
     for item in var['siglists']:
-        name = guids.name(item['ascii_guid'])
+        name = guids.name(item['guid'])
         count = len(item['sigs'])
         print(f'    list type={name} count={count}')
         cert = item['sigs'][0].get('x509')
@@ -370,7 +365,7 @@ print_funcs = {
 
 def print_var(var, verbose, hexdump):
     name = var['ascii_name']
-    gname = guids.name(var['ascii_guid'])
+    gname = guids.name(var['guid'])
     size = len(var['data'])
     print(f'  - name={name} guid={gname} size={size}')
     pfunc = print_funcs.get(var['ascii_name'])
@@ -404,10 +399,10 @@ def update_data_from_siglists(var):
         sigs = b''
         count = 0
         for sig in siglist['sigs']:
-            sigs += sig['guid']
+            sigs += sig['guid'].bytes_le
             sigs += sig['data']
             count += 1
-        blob += siglist['guid']
+        blob += siglist['guid'].bytes_le
         blob += struct.pack("=LLL",
                             16 + 12 + len(siglist['header']) + len(sigs),
                             len(siglist['header']),
@@ -433,7 +428,7 @@ def write_var(var):
                         var['pkidx'],
                         len(var['name']),
                         len(var['data']))
-    blob += var['guid']
+    blob += var['guid'].bytes_le
     blob += var['name']
     blob += var['data']
     while len(blob) & 3:
@@ -467,9 +462,8 @@ def var_create(varlist, name):
 
     print(f'# create variable {name}')
     var = var_template.copy()
-    var['ascii_guid'] = cfg['guid']
     var['ascii_name'] = name
-    var['guid']       = guids.binary(cfg['guid'])
+    var['guid']       = guids.parse_str(cfg['guid'])
     var['name']       = ucs16.to_ucs16(name)
     var['attr']       = cfg['attr']
     varlist[name] = var
@@ -510,16 +504,14 @@ def var_add_cert(varlist, name, owner, file, replace = False):
             return
     sigs = []
     sigs.append({
-        'ascii_guid' : owner,
-        'guid'       : guids.binary(owner),
-        'data'       : certdata,
-        'x509'       : cert,
+        'guid'   : guids.parse_str(owner),
+        'data'   : certdata,
+        'x509'   : cert,
     })
     var['siglists'].append({
-        'ascii_guid' : guids.EfiCertX509,
-        'guid'       : guids.binary(guids.EfiCertX509),
-        'header'     : b'',
-        'sigs'       : sigs,
+        'guid'   : guids.parse_str(guids.EfiCertX509),
+        'header' : b'',
+        'sigs'   : sigs,
     })
     update_data_from_siglists(var)
     var_update_time(var)
@@ -536,15 +528,13 @@ def var_add_dummy_dbx(varlist, owner):
     print("# add dummy dbx entry")
     sigs = []
     sigs.append({
-        'ascii_guid' : owner,
-        'guid'       : guids.binary(owner),
-        'data'       : hashlib.sha256(b'').digest(),
+        'guid'   : guids.parse_str(owner),
+        'data'   : hashlib.sha256(b'').digest(),
     })
     var['siglists'].append({
-        'ascii_guid' : guids.EfiCertSha256,
-        'guid'       : guids.binary(guids.EfiCertSha256),
-        'header'     : b'',
-        'sigs'       : sigs,
+        'guid'   : guids.parse_str(guids.EfiCertSha256),
+        'header' : b'',
+        'sigs'   : sigs,
     })
     update_data_from_siglists(var)
     var_update_time(var)

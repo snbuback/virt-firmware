@@ -73,16 +73,13 @@ name_table = {
 }
 
 def name(guid):
-    nstr = name_table.get(guid, None)
+    nstr = name_table.get(str(guid), None)
     if nstr is None:
-        return guid
+        return str(guid)
     return f'guid:{nstr}'
 
-def parse(data, offset):
-    guid = uuid.UUID(bytes_le = data[offset:offset+16])
-    nstr = guid.urn.split(":")[2]
-    return nstr
+def parse_bin(data, offset):
+    return uuid.UUID(bytes_le = data[offset:offset+16])
 
-def binary(nstr):
-    guid = uuid.UUID(f'urn:uuid:{nstr}')
-    return guid.bytes_le
+def parse_str(nstr):
+    return uuid.UUID(f'urn:uuid:{nstr}')
