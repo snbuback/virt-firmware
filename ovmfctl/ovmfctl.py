@@ -69,7 +69,6 @@ vars_settings = {
 }
 
 var_template = {
-    'ascii_name' : 'FIXME',
     'guid'       : b'FIXME',
     'name'       : b'FIXME',
     'attr'       : 0,
@@ -111,7 +110,7 @@ def parse_time(data, offset):
 
 def extract_cert(var, owner, cert):
     cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-    filename = var['ascii_name']
+    filename = str(var['name'])
     filename += '-' + owner
     filename += '-' + "".join(x for x in cn.value if x.isalnum())
     filename += ".pem"
@@ -142,7 +141,7 @@ def parse_sigs(var, extract):
             if str(guid) == guids.EfiCertX509:
                 sig['x509'] = x509.load_der_x509_certificate(sdata)
                 if extract:
-                    extract_cert(var, sig['ascii_guid'], sig['x509'])
+                    extract_cert(var, str(sig['guid']), sig['x509'])
             sigs.append(sig)
             spos += ssize
 
@@ -168,21 +167,17 @@ def parse_vars(data, start, end, extract):
                 'count' : count,
                 'pkidx' : pk,
             }
+            var['time'] = parse_time(data, pos + 16)
+
             var['guid'] = guids.parse_bin(data, pos + 44)
-            var['name'] = data[pos + 44 + 16 :
-                               pos + 44 + 16 + nsize]
+            var['name'] = ucs16.from_ucs16(data, pos + 44 + 16)
             var['data'] = data[pos + 44 + 16 + nsize :
                                pos + 44 + 16 + nsize + dsize]
 
-            var['time'] = parse_time(data, pos + 16)
-            var['ascii_name'] = ucs16.from_ucs16(var['name'], 0)
-            varlist[var['ascii_name']] = var
+            name = str(var['name'])
+            varlist[name] = var
 
-            if (var['ascii_name'] == "PK"  or
-                var['ascii_name'] == "KEK" or
-                var['ascii_name'] == "db"  or
-                var['ascii_name'] == "dbx" or
-                var['ascii_name'] == "MokList"):
+            if name in ("PK", "KEK", "db", "dbx", "MokList"):
                 parse_sigs(var, extract)
 
         pos = pos + 44 + 16 + nsize + dsize
@@ -317,7 +312,7 @@ def device_path(data):
 def print_boot_entry(var):
     (attr, pathsize) = struct.unpack_from('=LH', var['data'])
     name = ucs16.from_ucs16(var['data'], 6)
-    pathoffset = ucs16.get_size(var['data'], 6) + 6
+    pathoffset = name.size() + 6
     devpath = device_path(var['data'][pathoffset: pathoffset + pathsize])
     print(f'    boot entry: name={name} devpath={devpath}')
 
@@ -364,11 +359,11 @@ print_funcs = {
 }
 
 def print_var(var, verbose, hexdump):
-    name = var['ascii_name']
+    name = str(var['name'])
     gname = guids.name(var['guid'])
     size = len(var['data'])
     print(f'  - name={name} guid={gname} size={size}')
-    pfunc = print_funcs.get(var['ascii_name'])
+    pfunc = print_funcs.get(name)
     if pfunc:
         pfunc(var)
     if var.get('siglists'):
@@ -426,10 +421,10 @@ def write_var(var):
     blob += write_time(var['time'])
     blob += struct.pack("=LLL",
                         var['pkidx'],
-                        len(var['name']),
+                        var['name'].size(),
                         len(var['data']))
     blob += var['guid'].bytes_le
-    blob += var['name']
+    blob += var['name'].bytes()
     blob += var['data']
     while len(blob) & 3:
         blob += b'\0'
@@ -462,10 +457,9 @@ def var_create(varlist, name):
 
     print(f'# create variable {name}')
     var = var_template.copy()
-    var['ascii_name'] = name
-    var['guid']       = guids.parse_str(cfg['guid'])
-    var['name']       = ucs16.to_ucs16(name)
-    var['attr']       = cfg['attr']
+    var['guid'] = guids.parse_str(cfg['guid'])
+    var['name'] = ucs16.from_string(name)
+    var['attr'] = cfg['attr']
     varlist[name] = var
     return var
 
