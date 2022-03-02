@@ -2,7 +2,7 @@
 """ efi ucs-16 encoding and decoding """
 
 class StringUCS16:
-    """ class reprsenting a ucs16 string """
+    """ class reprsenting an efi ucs16 string """
 
     def __init__(self, string = None):
         self.data = b''
