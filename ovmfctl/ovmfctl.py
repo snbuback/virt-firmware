@@ -114,7 +114,7 @@ def parse_sigs(var, extract):
         sigs = []
         spos = 0
         while spos < len(siglist):
-            owner = guids.parse_bin(siglist, pos)
+            owner = guids.parse_bin(siglist, spos)
             sdata = siglist[ spos + 16 : spos + ssize ]
             sig = {
                 'guid' : owner,
