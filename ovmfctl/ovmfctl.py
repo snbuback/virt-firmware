@@ -424,7 +424,7 @@ def write_var(var):
                         var['name'].size(),
                         len(var['data']))
     blob += var['guid'].bytes_le
-    blob += var['name'].bytes()
+    blob += bytes(var['name'])
     blob += var['data']
     while len(blob) & 3:
         blob += b'\0'

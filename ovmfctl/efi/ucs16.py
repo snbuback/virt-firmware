@@ -24,7 +24,7 @@ class StringUCS16:
         """ set StringUCS16 from python string """
         self.data = string.encode('utf-16le')
 
-    def bytes(self):
+    def __bytes__(self):
         """ return bytes representing StringUCS16, with termianting 0 """
         return self.data + b'\0\0'
 
@@ -36,7 +36,7 @@ class StringUCS16:
         return self.data.decode('utf-16le')
 
     def __repr__(self):
-        return f"StringUCS16('{str(self)}')"
+        return f"{self.__class__.__name__}('{str(self)}')"
 
 def from_ucs16(data, offset):
     """ convert ucs-16 bytes to StringUCS16 """
