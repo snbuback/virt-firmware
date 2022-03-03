@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives import serialization
 
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
+from ovmfctl.efi import devpath
 
 ##################################################################################################
 # constants
@@ -232,71 +233,12 @@ def print_bool(var):
     else:
         print("    bool: off")
 
-# pylint: disable=too-many-return-statements,too-many-branches
-def device_path_elem(devtype, subtype, data):
-    if devtype == 0x01:
-        if subtype == 0x01:
-            (func, dev) = struct.unpack_from('=BB', data)
-            return f'PCI(device={dev:02x}:{func:x})'
-        if subtype == 0x04:
-            guid = guids.parse_bin(data, 0)
-            return f'VendorHW({guid})'
-        return f'HW(subtype=0x{subtype:x})'
-    if devtype == 0x02:
-        if subtype == 0x01:
-            (hid, uid) = struct.unpack_from('=LL', data)
-            return f'ACPI(hid=0x{hid:x},uid=0x{uid:x})'
-        return f'ACPI(subtype=0x{subtype:x})'
-    if devtype == 0x03:
-        if subtype == 0x02:
-            (pun, lun) = struct.unpack_from('=HH', data)
-            return f'SCSI(pun={pun},lun={lun})'
-        if subtype == 0x0b:
-            return 'MAC()'
-        if subtype == 0x0c:
-            return 'IPv4()'
-        if subtype == 0x0d:
-            return 'IPv6()'
-        if subtype == 0x12:
-            (port, mul, lun) = struct.unpack_from('=HHH', data)
-            return f'SATA(port={port})'
-        if subtype == 0x18:
-            return 'URI()'
-        return f'Msg(subtype=0x{subtype:x})'
-    if devtype == 0x04:
-        if subtype == 0x01:
-            (pnr, pstart, pend) = struct.unpack_from('=LQQ', data)
-            return f'Partition(nr={pnr})'
-        if subtype == 0x04:
-            path = ucs16.from_ucs16(data, 0)
-            return f'FilePath({path})'
-        if subtype == 0x06:
-            guid = guids.parse_bin(data, 0)
-            return f'FvFileName({guid})'
-        if subtype == 0x07:
-            guid = guids.parse_bin(data, 0)
-            return f'FvName({guid})'
-        return f'Media(subtype=0x{subtype:x})'
-    return f'Unknown(type=0x{devtype:x},subtype=0x{subtype:x})'
-
-def device_path(data):
-    pos = 0
-    path = []
-    while pos < len(data):
-        (devtype, subtype, size) = struct.unpack_from('=BBH', data, pos)
-        if devtype == 0x7f or size < 4:
-            break
-        path.append(device_path_elem(devtype, subtype,
-                                     data[ pos + 4 : pos + size ]))
-        pos += size
-    return "/".join(path)
-
 def print_boot_entry(var):
     (attr, pathsize) = struct.unpack_from('=LH', var['data'])
     name = ucs16.from_ucs16(var['data'], 6)
     pathoffset = name.size() + 6
-    devpath = device_path(var['data'][pathoffset: pathoffset + pathsize])
-    print(f'    boot entry: name={name} devpath={devpath}')
+    devicepath = devpath.DevicePath(var['data'][pathoffset: pathoffset + pathsize])
+    print(f'    boot entry: name={name} devicepath={devicepath}')
 
 def print_boot_list(var):
     bootlist = []
