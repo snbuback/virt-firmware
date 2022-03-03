@@ -550,6 +550,14 @@ def main():
                       action = 'append', type = 'string',
                       help = 'delete variable VAR, can be specified multiple times',
                       metavar = 'VAR')
+    parser.add_option('--set-true', dest = 'set_true',
+                      action = 'append', type = 'string',
+                      help = 'set variable VAR to true, can be specified multiple times',
+                      metavar = 'VAR')
+    parser.add_option('--set-false', dest = 'set_false',
+                      action = 'append', type = 'string',
+                      help = 'set variable VAR to false, can be specified multiple times',
+                      metavar = 'VAR')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
                       'from FILE and with owner GUID',
@@ -599,6 +607,14 @@ def main():
 
     if options.delete:
         vars_delete(varlist, options.delete)
+
+    if options.set_true:
+        for item in options.set_true:
+            varlist[item]['data'] = b'\x01'
+
+    if options.set_false:
+        for item in options.set_false:
+            varlist[item]['data'] = b'\x00'
 
     if options.redhat:
         platform_redhat(varlist)
