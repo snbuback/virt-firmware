@@ -75,17 +75,7 @@ var_template = {
     'count'      : 0,
     'pkidx'      : 0,
     'data'       : b'',
-    'time'       : {
-        'year'   : 0,
-        'month'  : 0,
-        'day'    : 0,
-        'hour'   : 0,
-        'min'    : 0,
-        'ns'     : 0,
-        'sec'    : 0,
-        'tz'     : 0,
-        'dl'     : 0,
-    }
+    'time'       : None,
 }
 
 
@@ -95,18 +85,10 @@ var_template = {
 def parse_time(data, offset):
     (year, month, day, hour, minute, second, ns, tz, dl) = \
         struct.unpack_from("=HBBBBBxLhBx", data, offset)
-    time = {
-        'year'  : year,
-        'month' : month,
-        'day'   : day,
-        'hour'  : hour,
-        'min'   : minute,
-        'sec'   : second,
-        'ns'    : ns,
-        'tz'    : tz,
-        'dl'    : dl,
-    }
-    return time
+    if year == 0:
+        return None
+    return datetime.datetime(year, month, day,
+                             hour, minute, second, int(ns / 1000))
 
 def extract_cert(var, owner, cert):
     cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
@@ -407,11 +389,13 @@ def update_data_from_siglists(var):
     var['data'] = blob
 
 def write_time(time):
-    blob = struct.pack("=HBBBBBxLhBx",
-                       time['year'], time['month'], time['day'],
-                       time['hour'], time['min'], time['sec'],
-                       time['ns'], time['tz'], time['dl'])
-    return blob
+    if time is None:
+        return b'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
+    return struct.pack("=HBBBBBxLhBx",
+                       time.year, time.month, time.day,
+                       time.hour, time.min, time.sec,
+                       time.microsecond * 1000,
+                       0, 0)
 
 def write_var(var):
     blob = struct.pack("=HBxLQ",
@@ -441,13 +425,7 @@ def vars_delete(varlist, delete):
 def var_update_time(var):
     if not var['attr'] & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
         return
-    now = datetime.datetime.now(datetime.timezone.utc)
-    var['time']['year']  = now.year
-    var['time']['month'] = now.month
-    var['time']['day']   = now.day
-    var['time']['hour']  = now.hour
-    var['time']['min']   = now.minute
-    var['time']['sec']   = now.second
+    var['time'] = datetime.datetime.now(datetime.timezone.utc)
 
 def var_create(varlist, name):
     cfg = vars_settings.get(name)
