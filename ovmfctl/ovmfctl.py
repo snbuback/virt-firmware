@@ -393,7 +393,7 @@ def write_time(time):
         return b'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
     return struct.pack("=HBBBBBxLhBx",
                        time.year, time.month, time.day,
-                       time.hour, time.min, time.sec,
+                       time.hour, time.minute, time.second,
                        time.microsecond * 1000,
                        0, 0)
 
