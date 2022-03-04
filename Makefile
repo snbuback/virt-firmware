@@ -20,7 +20,7 @@ tarball $(PKG_TARBALL):
 	rm -rf dist
 	python3 -m build
 
-rpm package: $(PKG_TARBALL)
+rpm package dist: $(PKG_TARBALL)
 	rm -rf rpms
 	mkdir -p rpms/src
 	pyp2rpm -d rpms/src --srpm $(PKG_TARBALL)
