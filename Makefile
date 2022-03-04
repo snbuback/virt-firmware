@@ -36,6 +36,22 @@ install:
 uninstall:
 	python3 -m pip uninstall ovmfctl
 
+test: test-ovmfdump test-ovmfctl
+
+test-ovmfdump:
+	ovmfdump --help
+	ovmfdump -i /usr/share/edk2/aarch64/QEMU_EFI.fd
+	ovmfdump -i /usr/share/edk2/aarch64/QEMU_VARS.fd
+	ovmfdump -i /usr/share/OVMF/OVMF_CODE.secboot.fd
+	ovmfdump -i /usr/share/OVMF/OVMF_VARS.secboot.fd
+
+test-ovmfctl:
+	ovmfctl --help
+	ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
+	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars.fd --enroll-redhat --secure-boot
+	ovmfctl -i vars.fd --print --verbose
+	rm -f vars.fd
+
 clean:
 	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
 	rm -rf *~ ovmfctl/*~ ovmfctl/efi/*~

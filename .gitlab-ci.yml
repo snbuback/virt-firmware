@@ -11,19 +11,12 @@ pylint:
 ovmfctl:
   script:
     - make install
-    - ovmfctl --help
-    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
-    - ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars.fd --enroll-redhat --secure-boot
-    - ovmfctl -i vars.fd --print --verbose
+    - make test-ovmfctl
 
 ovmfdump:
   script:
     - make install
-    - ovmfdump --help
-    - ovmfdump -i /usr/share/edk2/aarch64/QEMU_EFI.fd
-    - ovmfdump -i /usr/share/edk2/aarch64/QEMU_VARS.fd
-    - ovmfdump -i /usr/share/OVMF/OVMF_CODE.secboot.fd
-    - ovmfdump -i /usr/share/OVMF/OVMF_VARS.secboot.fd
+    - make test-ovmfdump
 
 package:
   script:
