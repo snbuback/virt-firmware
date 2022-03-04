@@ -29,6 +29,7 @@ rpm package dist: $(PKG_TARBALL)
 		--define "_srcrpmdir rpms/src" \
 		rpms/src/*.src.rpm
 	createrepo rpms
+	twine check dist/*
 
 install:
 	python3 -m pip install --user .
