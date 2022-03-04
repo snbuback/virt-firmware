@@ -20,6 +20,7 @@ tarball $(PKG_TARBALL):
 	rm -rf dist
 	python3 -m build
 
+.PHONY: dist
 rpm package dist: $(PKG_TARBALL)
 	rm -rf rpms
 	mkdir -p rpms/src
