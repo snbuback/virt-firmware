@@ -1,5 +1,9 @@
 #!/usr/bin/python
-""" efi device path decoder """
+"""
+efi device path decoder
+
+EFI_DEVICE_PATH_PROTOCOL (Protocol/DevicePath.h)
+"""
 
 import struct
 import collections
