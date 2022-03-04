@@ -1,20 +1,18 @@
 #!/usr/bin/python
 """ print and edit ovmf varstore files """
-import os
 import sys
 import struct
 import pprint
-import hashlib
 import optparse
 import datetime
 import pkg_resources
 
 from cryptography import x509
-from cryptography.hazmat.primitives import serialization
 
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 from ovmfctl.efi import devpath
+from ovmfctl.efi import siglist
 
 ##################################################################################################
 # constants
@@ -91,51 +89,7 @@ def parse_time(data, offset):
     return datetime.datetime(year, month, day,
                              hour, minute, second, int(ns / 1000))
 
-def extract_cert(var, owner, cert):
-    cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-    filename = str(var['name'])
-    filename += '-' + owner
-    filename += '-' + "".join(x for x in cn.value if x.isalnum())
-    filename += ".pem"
-    if os.path.exists(filename):
-        print(f"# WARNNG: exists: {filename}")
-        return
-    print(f"# writing: {filename}")
-    with open(filename, "wb") as f:
-        f.write(cert.public_bytes(serialization.Encoding.PEM))
-
-def parse_sigs(var, extract):
-    data = var['data']
-    pos = 0
-    var['siglists'] = []
-    while pos < len(data):
-        guid = guids.parse_bin(data, pos)
-        (lsize, hsize, ssize) = struct.unpack_from("=LLL", data, pos + 16)
-        siglist = data[ pos + 16 + 12 + hsize : pos+lsize ]
-        sigs = []
-        spos = 0
-        while spos < len(siglist):
-            owner = guids.parse_bin(siglist, spos)
-            sdata = siglist[ spos + 16 : spos + ssize ]
-            sig = {
-                'guid' : owner,
-                'data' : sdata,
-            }
-            if str(guid) == guids.EfiCertX509:
-                sig['x509'] = x509.load_der_x509_certificate(sdata)
-                if extract:
-                    extract_cert(var, str(sig['guid']), sig['x509'])
-            sigs.append(sig)
-            spos += ssize
-
-        var['siglists'].append({
-            'guid'   : guid,
-            'header' : data[ pos + 16 + 12 : pos + 16 + 12 + hsize ],
-            'sigs'   : sigs,
-        })
-        pos += lsize
-
-def parse_vars(data, start, end, extract):
+def parse_vars(data, start, end):
     pos = start
     varlist = {}
     while pos < end:
@@ -161,7 +115,7 @@ def parse_vars(data, start, end, extract):
             varlist[name] = var
 
             if name in ("PK", "KEK", "db", "dbx", "MokList"):
-                parse_sigs(var, extract)
+                var['sigdb'] = siglist.EfiSigDB(var['data'])
 
         pos = pos + 44 + 16 + nsize + dsize
         pos = (pos + 3) & ~3 # align
@@ -251,14 +205,13 @@ def print_boot_list(var):
 def print_ascii(var):
     print(f"    string: {var['data'].decode()}")
 
-def print_siglists(var):
-    for item in var['siglists']:
-        name = guids.name(item['guid'])
-        count = len(item['sigs'])
+def print_sigdb(var):
+    for item in var['sigdb']:
+        name = guids.name(item.guid)
+        count = len(item)
         print(f'    list type={name} count={count}')
-        cert = item['sigs'][0].get('x509')
-        if cert:
-            cn = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+        if item.x509:
+            cn = item.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
             print(f'      x509 CN={cn.value}')
 
 print_funcs = {
@@ -290,8 +243,8 @@ def print_var(var, verbose, hexdump):
     pfunc = print_funcs.get(name)
     if pfunc:
         pfunc(var)
-    if var.get('siglists'):
-        print_siglists(var)
+    if var.get('sigdb'):
+        print_sigdb(var)
     if verbose:
         print("----- raw -----")
         pprint.pprint(var)
@@ -309,26 +262,11 @@ def print_vars(varlist, verbose, hexdump):
 ##################################################################################################
 # write vars
 
-def update_data_from_siglists(var):
-    siglists = var.get('siglists')
-    if not siglists:
+def update_data_from_sigdb(var):
+    sigdb = var.get('sigdb')
+    if not sigdb:
         return
-    blob = b''
-    for siglist in siglists:
-        sigs = b''
-        count = 0
-        for sig in siglist['sigs']:
-            sigs += sig['guid'].bytes_le
-            sigs += sig['data']
-            count += 1
-        blob += siglist['guid'].bytes_le
-        blob += struct.pack("=LLL",
-                            16 + 12 + len(siglist['header']) + len(sigs),
-                            len(siglist['header']),
-                            int(len(sigs) / count))
-        blob += siglist['header']
-        blob += sigs
-    var['data'] = blob
+    var['data'] = bytes(sigdb)
 
 def write_time(time):
     if time is None:
@@ -396,61 +334,29 @@ def var_set_bool(varlist, name, value):
         var['data'] = b'\x00'
     var_update_time(var)
 
-def var_add_cert(varlist, name, owner, file, replace = False):
+def var_add_cert(varlist, name, owner, filename, replace = False):
     var = varlist.get(name)
     if not var:
         var = var_create(varlist, name)
-    if not var.get('siglists') or replace:
-        print(f'# init/clear {name} siglist')
-        var['siglists'] = []
+    if not var.get('sigdb') or replace:
+        print(f'# init/clear {name} sigdb')
+        var['sigdb'] = siglist.EfiSigDB()
 
-    print(f'# add {name} cert {file}')
-    with open(file, "rb") as f:
-        pem = f.read()
-    if b'-----BEGIN' in pem:
-        cert = x509.load_pem_x509_certificate(pem)
-    else:
-        cert = x509.load_der_x509_certificate(pem)
-    certdata = cert.public_bytes(serialization.Encoding.DER)
-    for c in var['siglists']:
-        if c['sigs'][0]['data'] == certdata:
-            print('# certificate already present, skipping')
-            return
-    sigs = []
-    sigs.append({
-        'guid'   : guids.parse_str(owner),
-        'data'   : certdata,
-        'x509'   : cert,
-    })
-    var['siglists'].append({
-        'guid'   : guids.parse_str(guids.EfiCertX509),
-        'header' : b'',
-        'sigs'   : sigs,
-    })
-    update_data_from_siglists(var)
+    print(f'# add {name} cert {filename}')
+    var['sigdb'].add_cert(guids.parse_str(owner), filename)
+    update_data_from_sigdb(var)
     var_update_time(var)
-
 
 def var_add_dummy_dbx(varlist, owner):
     var = varlist.get('dbx')
     if var:
         return
 
-    var = var_create(varlist, 'dbx')
-    var['siglists'] = []
-
     print("# add dummy dbx entry")
-    sigs = []
-    sigs.append({
-        'guid'   : guids.parse_str(owner),
-        'data'   : hashlib.sha256(b'').digest(),
-    })
-    var['siglists'].append({
-        'guid'   : guids.parse_str(guids.EfiCertSha256),
-        'header' : b'',
-        'sigs'   : sigs,
-    })
-    update_data_from_siglists(var)
+    var = var_create(varlist, 'dbx')
+    var['sigdb'] = siglist.EfiSigDB()
+    var['sigdb'].add_dummy(guids.parse_str(owner))
+    update_data_from_sigdb(var)
     var_update_time(var)
 
 
@@ -539,13 +445,13 @@ def main():
         print("ERROR: no input file specified (try -h for help)")
         sys.exit(1)
 
-    print(f'"# reading varstore from {options.input}')
+    print(f'# reading varstore from {options.input}')
     with open(options.input, "rb") as f:
         infile = f.read()
 
     (start, end) = parse_volume(options.input, infile)
     print(f'var store range: 0x{start:x} -> 0x{end:x}')
-    varlist = parse_vars(infile, start, end, options.extract)
+    varlist = parse_vars(infile, start, end)
 
     if options.delete:
         vars_delete(varlist, options.delete)
