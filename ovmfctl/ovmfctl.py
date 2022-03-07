@@ -3,6 +3,7 @@
 import sys
 import struct
 import pprint
+import logging
 import optparse
 import datetime
 import pkg_resources
@@ -127,13 +128,13 @@ def parse_varstore(file, data, start):
     print(f'varstore={guids.name(guid)} size=0x{size:x} '
           f'format=0x{storefmt:x} state=0x{state:x}')
     if str(guid) != guids.AuthVars:
-        print(f"ERROR: {file}: unknown varstore guid")
+        logging.error(f'{file}: unknown varstore guid')
         sys.exit(1)
     if storefmt != 0x5a:
-        print(f"ERROR: {file}: unknown varstore format")
+        logging.error(f'{file}: unknown varstore format')
         sys.exit(1)
     if state != 0xfe:
-        print(f"ERROR: {file}: unknown varstore state")
+        logging.error(f'{file}: unknown varstore state')
         sys.exit(1)
     return (start + 16 + 12, start + size)
 
@@ -144,10 +145,10 @@ def parse_volume(file, data):
     print(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
           f'blocks={blocks}*{blksize} (0x{blocks * blksize:x})')
     if sig != 0x4856465f:
-        print(f"ERROR: {file}: not a firmware volume")
+        logging.error(f'{file}: not a firmware volume')
         sys.exit(1)
     if str(guid) != guids.NvData:
-        print(f"ERROR: {file}: not a variable store")
+        logging.error(f'{file}: not a variable store')
         sys.exit(1)
     return parse_varstore(file, data, hlen)
 
@@ -253,10 +254,9 @@ def print_var(var, verbose, hexdump):
         print_hexdump(var['data'], 0, len(var['data']))
 
 def print_vars(varlist, verbose, hexdump):
-    print("# printing variables ...")
+    logging.info("printing variables ...")
     for (key, item) in varlist.items():
         print_var(item, verbose, hexdump)
-    print("# ... done")
 
 
 ##################################################################################################
@@ -297,10 +297,10 @@ def write_var(var):
 def vars_delete(varlist, delete):
     for item in delete:
         if varlist.get(item):
-            print(f'# delete variable: {item}')
+            logging.info(f'delete variable: {item}')
             del varlist[item]
         else:
-            print(f'# WARNING: variable {item} not found')
+            logging.warn(f'variable {item} not found')
 
 def var_update_time(var):
     if not var['attr'] & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
@@ -310,10 +310,10 @@ def var_update_time(var):
 def var_create(varlist, name):
     cfg = vars_settings.get(name)
     if not cfg:
-        print(f'ERROR: unknown variable {name}')
+        logging.error(f'unknown variable {name}')
         sys.exit(1)
 
-    print(f'# create variable {name}')
+    logging.info(f'create variable {name}')
     var = var_template.copy()
     var['guid'] = guids.parse_str(cfg['guid'])
     var['name'] = ucs16.from_string(name)
@@ -327,10 +327,10 @@ def var_set_bool(varlist, name, value):
         var = var_create(varlist, name)
 
     if value:
-        print(f'# set variable {name}: True')
+        logging.info(f'set variable {name}: True')
         var['data'] = b'\x01'
     else:
-        print(f'# set variable {name}: False')
+        logging.info(f'set variable {name}: False')
         var['data'] = b'\x00'
     var_update_time(var)
 
@@ -339,10 +339,10 @@ def var_add_cert(varlist, name, owner, filename, replace = False):
     if not var:
         var = var_create(varlist, name)
     if not var.get('sigdb') or replace:
-        print(f'# init/clear {name} sigdb')
+        logging.info(f'init/clear {name} sigdb')
         var['sigdb'] = siglist.EfiSigDB()
 
-    print(f'# add {name} cert {filename}')
+    logging.info(f'add {name} cert {filename}')
     var['sigdb'].add_cert(guids.parse_str(owner), filename)
     update_data_from_sigdb(var)
     var_update_time(var)
@@ -352,7 +352,7 @@ def var_add_dummy_dbx(varlist, owner):
     if var:
         return
 
-    print("# add dummy dbx entry")
+    logging.info("add dummy dbx entry")
     var = var_create(varlist, 'dbx')
     var['sigdb'] = siglist.EfiSigDB()
     var['sigdb'].add_dummy(guids.parse_str(owner))
@@ -441,16 +441,19 @@ def main():
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
 
+    logging.basicConfig(format = '%(levelname)s:%(message)s',
+                        level = logging.INFO)
+
     if not options.input:
         print("ERROR: no input file specified (try -h for help)")
         sys.exit(1)
 
-    print(f'# reading varstore from {options.input}')
+    logging.info(f'reading varstore from {options.input}')
     with open(options.input, "rb") as f:
         infile = f.read()
 
     (start, end) = parse_volume(options.input, infile)
-    print(f'var store range: 0x{start:x} -> 0x{end:x}')
+    logging.info(f'var store range: 0x{start:x} -> 0x{end:x}')
     varlist = parse_vars(infile, start, end)
 
     if options.delete:
@@ -495,13 +498,13 @@ def main():
             outfile += write_var(item)
 
         if len(outfile) > end:
-            print("ERROR: varstore is too small")
+            logging.error("varstore is too small")
             sys.exit(1)
 
         outfile += b''.zfill(end - len(outfile))
         outfile += infile[end:]
 
-        print(f'# writing varstore to {options.output}')
+        logging.info(f'writing varstore to {options.output}')
         with open(options.output, "wb") as f:
             f.write(outfile)
 

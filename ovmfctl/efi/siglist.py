@@ -4,6 +4,7 @@
 import os
 import struct
 import hashlib
+import logging
 import collections
 
 from cryptography import x509
@@ -77,9 +78,9 @@ class EfiSigList(collections.UserList):
         filename += "".join(x for x in cn.value if x.isalnum())
         filename += ".pem"
         if os.path.exists(filename):
-            #print(f"# WARNNG: exists: {filename}")
+            logging.info(f'exists: {filename}, skipping')
             return
-        #print(f"# writing: {filename}")
+        logging.info(f'writing: {filename}')
         with open(filename, "wb") as f:
             f.write(self.x509.public_bytes(serialization.Encoding.PEM))
 
@@ -119,7 +120,7 @@ class EfiSigDB(collections.UserList):
         siglist.add_cert(guid, filename)
         for item in list(self):
             if item.x509 == siglist.x509:
-                #print('# certificate already present, skipping')
+                logging.info('certificate already present, skipping')
                 return
         self.append(siglist)
 
