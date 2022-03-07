@@ -125,8 +125,8 @@ def parse_vars(data, start, end):
 def parse_varstore(file, data, start):
     guid = guids.parse_bin(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
-    print(f'varstore={guids.name(guid)} size=0x{size:x} '
-          f'format=0x{storefmt:x} state=0x{state:x}')
+    logging.debug(f'varstore={guids.name(guid)} size=0x{size:x} '
+                  f'format=0x{storefmt:x} state=0x{state:x}')
     if str(guid) != guids.AuthVars:
         logging.error(f'{file}: unknown varstore guid')
         sys.exit(1)
@@ -142,8 +142,8 @@ def parse_volume(file, data):
     guid = guids.parse_bin(data, 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, 32)
-    print(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
-          f'blocks={blocks}*{blksize} (0x{blocks * blksize:x})')
+    logging.debug(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
+                  f'blocks={blocks}*{blksize} (0x{blocks * blksize:x})')
     if sig != 0x4856465f:
         logging.error(f'{file}: not a firmware volume')
         sys.exit(1)
@@ -441,11 +441,11 @@ def main():
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
 
-    logging.basicConfig(format = '%(levelname)s:%(message)s',
+    logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = logging.INFO)
 
     if not options.input:
-        print("ERROR: no input file specified (try -h for help)")
+        logging.error("no input file specified (try -h for help)")
         sys.exit(1)
 
     logging.info(f'reading varstore from {options.input}')
