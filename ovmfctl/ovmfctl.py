@@ -456,6 +456,12 @@ def main():
     logging.info(f'var store range: 0x{start:x} -> 0x{end:x}')
     varlist = parse_vars(infile, start, end)
 
+    if options.extract:
+        for (key, item) in varlist.items():
+            sigdb = item.get('sigdb')
+            if sigdb:
+                sigdb.extract_certs(key)
+
     if options.delete:
         vars_delete(varlist, options.delete)
 
