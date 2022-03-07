@@ -389,6 +389,8 @@ def microsoft_keys(varlist):
 # pylint: disable=too-many-branches,too-many-statements
 def main():
     parser = optparse.OptionParser()
+    parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
+                      help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
     parser.add_option('--extract-certs', dest = 'extract',
@@ -442,7 +444,7 @@ def main():
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
-                        level = logging.INFO)
+                        level = getattr(logging, options.loglevel.upper()))
 
     if not options.input:
         logging.error("no input file specified (try -h for help)")
