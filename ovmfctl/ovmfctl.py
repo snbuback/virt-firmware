@@ -1,11 +1,10 @@
 #!/usr/bin/python
 """ print and edit ovmf varstore files """
 import sys
+import json
 import struct
-import pprint
 import logging
 import optparse
-import datetime
 import pkg_resources
 
 from cryptography import x509
@@ -13,82 +12,12 @@ from cryptography import x509
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 from ovmfctl.efi import devpath
-from ovmfctl.efi import siglist
-
-##################################################################################################
-# constants
-
-# variable attributes
-EFI_VARIABLE_NON_VOLATILE                          = 0x00000001
-EFI_VARIABLE_BOOTSERVICE_ACCESS                    = 0x00000002
-EFI_VARIABLE_RUNTIME_ACCESS                        = 0x00000004
-EFI_VARIABLE_HARDWARE_ERROR_RECORD                 = 0x00000008
-EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS            = 0x00000010  # deprecated
-EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS = 0x00000020
-EFI_VARIABLE_APPEND_WRITE                          = 0x00000040
-
-vars_settings = {
-    'SecureBootEnable' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
-        'guid' : guids.EfiSecureBootEnableDisable,
-    },
-    'CustomMode' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
-        'guid' : guids.EfiCustomModeEnable,
-    },
-    'PK' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS |
-                  EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : guids.EfiGlobalVariable,
-    },
-    'KEK' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS |
-                  EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : guids.EfiGlobalVariable,
-    },
-    'db' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS |
-                  EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : guids.EfiImageSecurityDatabase,
-    },
-    'dbx' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS |
-                  EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
-        'guid' : guids.EfiImageSecurityDatabase,
-    },
-}
-
-var_template = {
-    'guid'       : b'FIXME',
-    'name'       : b'FIXME',
-    'attr'       : 0,
-    'count'      : 0,
-    'pkidx'      : 0,
-    'data'       : b'',
-    'time'       : None,
-}
+from ovmfctl.efi import efivar
+from ovmfctl.efi import efijson
 
 
 ##################################################################################################
 # parse stuff
-
-def parse_time(data, offset):
-    (year, month, day, hour, minute, second, ns, tz, dl) = \
-        struct.unpack_from("=HBBBBBxLhBx", data, offset)
-    if year == 0:
-        return None
-    return datetime.datetime(year, month, day,
-                             hour, minute, second, int(ns / 1000))
 
 def parse_vars(data, start, end):
     pos = start
@@ -100,23 +29,15 @@ def parse_vars(data, start, end):
         (pk, nsize, dsize) = struct.unpack_from("=LLL", data, pos + 32)
 
         if state == 0x3f:
-            var = {
-                'attr'  : attr,
-                'count' : count,
-                'pkidx' : pk,
-            }
-            var['time'] = parse_time(data, pos + 16)
-
-            var['guid'] = guids.parse_bin(data, pos + 44)
-            var['name'] = ucs16.from_ucs16(data, pos + 44 + 16)
-            var['data'] = data[pos + 44 + 16 + nsize :
-                               pos + 44 + 16 + nsize + dsize]
-
-            name = str(var['name'])
-            varlist[name] = var
-
-            if name in ("PK", "KEK", "db", "dbx", "MokList"):
-                var['sigdb'] = siglist.EfiSigDB(var['data'])
+            var = efivar.EfiVar(ucs16.from_ucs16(data, pos + 44 + 16),
+                                guid = guids.parse_bin(data, pos + 44),
+                                attr = attr,
+                                data = data[pos + 44 + 16 + nsize :
+                                            pos + 44 + 16 + nsize + dsize],
+                                count = count,
+                                pkidx = pk)
+            var.parse_time(data, pos + 16)
+            varlist[str(var.name)] = var
 
         pos = pos + 44 + 16 + nsize + dsize
         pos = (pos + 3) & ~3 # align
@@ -183,31 +104,31 @@ def print_hexdump(data, start, end):
         print(f'    {pos:06x}: [ ... ]')
 
 def print_bool(var):
-    if var['data'][0]:
+    if var.data[0]:
         print("    bool: ON")
     else:
         print("    bool: off")
 
 def print_boot_entry(var):
-    (attr, pathsize) = struct.unpack_from('=LH', var['data'])
-    name = ucs16.from_ucs16(var['data'], 6)
+    (attr, pathsize) = struct.unpack_from('=LH', var.data)
+    name = ucs16.from_ucs16(var.data, 6)
     pathoffset = name.size() + 6
-    devicepath = devpath.DevicePath(var['data'][pathoffset: pathoffset + pathsize])
+    devicepath = devpath.DevicePath(var.data[pathoffset: pathoffset + pathsize])
     print(f'    boot entry: name={name} devicepath={devicepath}')
 
 def print_boot_list(var):
     bootlist = []
-    for pos in range(len(var['data']) >> 1):
-        nr = struct.unpack_from('=H', var['data'], pos * 2)
+    for pos in range(len(var.data) >> 1):
+        nr = struct.unpack_from('=H', var.data, pos * 2)
         bootlist.append(f'{nr[0]:04d}')
     desc= ", ".join(bootlist)
     print(f'    boot order: {desc}')
 
 def print_ascii(var):
-    print(f"    string: {var['data'].decode()}")
+    print(f"    string: {var.data.decode()}")
 
 def print_sigdb(var):
-    for item in var['sigdb']:
+    for item in var.sigdb:
         name = guids.name(item.guid)
         count = len(item)
         print(f'    list type={name} count={count}')
@@ -237,21 +158,21 @@ print_funcs = {
 }
 
 def print_var(var, verbose, hexdump):
-    name = str(var['name'])
-    gname = guids.name(var['guid'])
-    size = len(var['data'])
+    name = str(var.name)
+    gname = guids.name(var.guid)
+    size = len(var.data)
     print(f'  - name={name} guid={gname} size={size}')
     pfunc = print_funcs.get(name)
     if pfunc:
         pfunc(var)
-    if var.get('sigdb'):
+    if var.sigdb:
         print_sigdb(var)
     if verbose:
         print("----- raw -----")
-        pprint.pprint(var)
+        print(json.dumps(var, cls=efijson.EfiJSONEncoder, indent = 4))
         print("----- end -----")
     if hexdump:
-        print_hexdump(var['data'], 0, len(var['data']))
+        print_hexdump(var.data, 0, len(var.data))
 
 def print_vars(varlist, verbose, hexdump):
     logging.info("printing variables ...")
@@ -262,34 +183,19 @@ def print_vars(varlist, verbose, hexdump):
 ##################################################################################################
 # write vars
 
-def update_data_from_sigdb(var):
-    sigdb = var.get('sigdb')
-    if not sigdb:
-        return
-    var['data'] = bytes(sigdb)
-
-def write_time(time):
-    if time is None:
-        return b'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
-    return struct.pack("=HBBBBBxLhBx",
-                       time.year, time.month, time.day,
-                       time.hour, time.minute, time.second,
-                       time.microsecond * 1000,
-                       0, 0)
-
 def write_var(var):
     blob = struct.pack("=HBxLQ",
                        0x55aa, 0x3f,
-                       var['attr'],
-                       var['count'])
-    blob += write_time(var['time'])
+                       var.attr,
+                       var.count)
+    blob += var.bytes_time()
     blob += struct.pack("=LLL",
-                        var['pkidx'],
-                        var['name'].size(),
-                        len(var['data']))
-    blob += var['guid'].bytes_le
-    blob += bytes(var['name'])
-    blob += var['data']
+                        var.pkidx,
+                        var.name.size(),
+                        len(var.data))
+    blob += var.guid.bytes_le
+    blob += bytes(var.name)
+    blob += var.data
     while len(blob) & 3:
         blob += b'\0'
     return blob
@@ -300,24 +206,11 @@ def vars_delete(varlist, delete):
             logging.info(f'delete variable: {item}')
             del varlist[item]
         else:
-            logging.warn(f'variable {item} not found')
-
-def var_update_time(var):
-    if not var['attr'] & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
-        return
-    var['time'] = datetime.datetime.now(datetime.timezone.utc)
+            logging.warning(f'variable {item} not found')
 
 def var_create(varlist, name):
-    cfg = vars_settings.get(name)
-    if not cfg:
-        logging.error(f'unknown variable {name}')
-        sys.exit(1)
-
     logging.info(f'create variable {name}')
-    var = var_template.copy()
-    var['guid'] = guids.parse_str(cfg['guid'])
-    var['name'] = ucs16.from_string(name)
-    var['attr'] = cfg['attr']
+    var = efivar.EfiVar(ucs16.from_string(name))
     varlist[name] = var
     return var
 
@@ -326,26 +219,19 @@ def var_set_bool(varlist, name, value):
     if not var:
         var = var_create(varlist, name)
 
-    if value:
-        logging.info(f'set variable {name}: True')
-        var['data'] = b'\x01'
-    else:
-        logging.info(f'set variable {name}: False')
-        var['data'] = b'\x00'
-    var_update_time(var)
+    logging.info(f'set variable {name}: {value}')
+    var.set_bool(value)
 
 def var_add_cert(varlist, name, owner, filename, replace = False):
     var = varlist.get(name)
     if not var:
         var = var_create(varlist, name)
-    if not var.get('sigdb') or replace:
-        logging.info(f'init/clear {name} sigdb')
-        var['sigdb'] = siglist.EfiSigDB()
+    if replace:
+        logging.info(f'clear {name} sigdb')
+        var.sigdb_clear()
 
     logging.info(f'add {name} cert {filename}')
-    var['sigdb'].add_cert(guids.parse_str(owner), filename)
-    update_data_from_sigdb(var)
-    var_update_time(var)
+    var.sigdb_add_cert(guids.parse_str(owner), filename)
 
 def var_add_dummy_dbx(varlist, owner):
     var = varlist.get('dbx')
@@ -354,10 +240,7 @@ def var_add_dummy_dbx(varlist, owner):
 
     logging.info("add dummy dbx entry")
     var = var_create(varlist, 'dbx')
-    var['sigdb'] = siglist.EfiSigDB()
-    var['sigdb'].add_dummy(guids.parse_str(owner))
-    update_data_from_sigdb(var)
-    var_update_time(var)
+    var.sigdb_add_dummy(guids.parse_str(owner))
 
 
 ##################################################################################################
@@ -460,7 +343,7 @@ def main():
 
     if options.extract:
         for (key, item) in varlist.items():
-            sigdb = item.get('sigdb')
+            sigdb = item.sigdb
             if sigdb:
                 sigdb.extract_certs(key)
 

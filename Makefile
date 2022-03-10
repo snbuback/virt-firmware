@@ -52,7 +52,7 @@ test-ovmfctl:
 	ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
 	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars.fd --enroll-redhat --secure-boot
 	ovmfctl -i vars.fd --print --verbose
-	rm -f vars.fd
+	rm -f vars.fd *.pem
 
 clean:
 	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
