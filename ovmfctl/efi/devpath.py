@@ -70,7 +70,7 @@ class DevicePathElem:
         if self.devtype == 0x01:
             return self.hw()
         if self.devtype == 0x02:
-            return self.msg()
+            return self.acpi()
         if self.devtype == 0x03:
             return self.msg()
         if self.devtype == 0x04:
