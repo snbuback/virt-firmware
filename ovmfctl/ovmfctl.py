@@ -46,16 +46,16 @@ def parse_vars(data, start, end):
 def parse_varstore(file, data, start):
     guid = guids.parse_bin(data, start)
     (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
-    logging.debug(f'varstore={guids.name(guid)} size=0x{size:x} '
-                  f'format=0x{storefmt:x} state=0x{state:x}')
+    logging.debug('varstore=%s size=0x%x format=0x%x state=0x%x',
+                  guids.name(guid), size, storefmt, state)
     if str(guid) != guids.AuthVars:
-        logging.error(f'{file}: unknown varstore guid')
+        logging.error('%s: unknown varstore guid', file)
         sys.exit(1)
     if storefmt != 0x5a:
-        logging.error(f'{file}: unknown varstore format')
+        logging.error('%s: unknown varstore format', file)
         sys.exit(1)
     if state != 0xfe:
-        logging.error(f'{file}: unknown varstore state')
+        logging.error('%s: unknown varstore state', file)
         sys.exit(1)
     return (start + 16 + 12, start + size)
 
@@ -63,13 +63,14 @@ def parse_volume(file, data):
     guid = guids.parse_bin(data, 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, 32)
-    logging.debug(f'vol={guids.name(guid)} vlen=0x{vlen:x} rev={rev} '
-                  f'blocks={blocks}*{blksize} (0x{blocks * blksize:x})')
+    logging.debug('vol=%s vlen=0x%x rev=%d blocks=%d*%d (0x%x)',
+                  guids.name(guid), vlen, rev,
+                  blocks, blksize, blocks * blksize)
     if sig != 0x4856465f:
-        logging.error(f'{file}: not a firmware volume')
+        logging.error('%s: not a firmware volume', file)
         sys.exit(1)
     if str(guid) != guids.NvData:
-        logging.error(f'{file}: not a variable store')
+        logging.error('%s: not a variable store', file)
         sys.exit(1)
     return parse_varstore(file, data, hlen)
 
@@ -203,13 +204,13 @@ def write_var(var):
 def vars_delete(varlist, delete):
     for item in delete:
         if varlist.get(item):
-            logging.info(f'delete variable: {item}')
+            logging.info('delete variable: %s', item)
             del varlist[item]
         else:
-            logging.warning(f'variable {item} not found')
+            logging.warning('variable %s not found', item)
 
 def var_create(varlist, name):
-    logging.info(f'create variable {name}')
+    logging.info('create variable %s', name)
     var = efivar.EfiVar(ucs16.from_string(name))
     varlist[name] = var
     return var
@@ -219,7 +220,7 @@ def var_set_bool(varlist, name, value):
     if not var:
         var = var_create(varlist, name)
 
-    logging.info(f'set variable {name}: {value}')
+    logging.info('set variable %s: %s', name, value)
     var.set_bool(value)
 
 def var_add_cert(varlist, name, owner, filename, replace = False):
@@ -227,10 +228,10 @@ def var_add_cert(varlist, name, owner, filename, replace = False):
     if not var:
         var = var_create(varlist, name)
     if replace:
-        logging.info(f'clear {name} sigdb')
+        logging.info('clear %s sigdb', name)
         var.sigdb_clear()
 
-    logging.info(f'add {name} cert {filename}')
+    logging.info('add %s cert %s', name, filename)
     var.sigdb_add_cert(guids.parse_str(owner), filename)
 
 def var_add_dummy_dbx(varlist, owner):
@@ -333,12 +334,12 @@ def main():
         logging.error("no input file specified (try -h for help)")
         sys.exit(1)
 
-    logging.info(f'reading varstore from {options.input}')
+    logging.info('reading varstore from %s', options.input)
     with open(options.input, "rb") as f:
         infile = f.read()
 
     (start, end) = parse_volume(options.input, infile)
-    logging.info(f'var store range: 0x{start:x} -> 0x{end:x}')
+    logging.info('var store range: 0x%x -> 0x%x', start, end)
     varlist = parse_vars(infile, start, end)
 
     if options.extract:
@@ -395,7 +396,7 @@ def main():
         outfile += b''.zfill(end - len(outfile))
         outfile += infile[end:]
 
-        logging.info(f'writing varstore to {options.output}')
+        logging.info('writing varstore to %s', options.output)
         with open(options.output, "wb") as f:
             f.write(outfile)
 

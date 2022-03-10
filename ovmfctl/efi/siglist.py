@@ -78,9 +78,9 @@ class EfiSigList(collections.UserList):
         filename += "".join(x for x in cn.value if x.isalnum())
         filename += ".pem"
         if os.path.exists(filename):
-            logging.info(f'exists: {filename}, skipping')
+            logging.info('exists: %s, skipping', filename)
             return
-        logging.info(f'writing: {filename}')
+        logging.info('writing: %s', filename)
         with open(filename, "wb") as f:
             f.write(self.x509.public_bytes(serialization.Encoding.PEM))
 
