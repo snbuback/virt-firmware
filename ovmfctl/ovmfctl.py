@@ -11,7 +11,6 @@ from cryptography import x509
 
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
-from ovmfctl.efi import devpath
 from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 
@@ -104,30 +103,6 @@ def print_hexdump(data, start, end):
     if start+count < end:
         print(f'    {pos:06x}: [ ... ]')
 
-def print_bool(var):
-    if var.data[0]:
-        print("    bool: ON")
-    else:
-        print("    bool: off")
-
-def print_boot_entry(var):
-    (attr, pathsize) = struct.unpack_from('=LH', var.data)
-    name = ucs16.from_ucs16(var.data, 6)
-    pathoffset = name.size() + 6
-    devicepath = devpath.DevicePath(var.data[pathoffset: pathoffset + pathsize])
-    print(f'    boot entry: name={name} devicepath={devicepath}')
-
-def print_boot_list(var):
-    bootlist = []
-    for pos in range(len(var.data) >> 1):
-        nr = struct.unpack_from('=H', var.data, pos * 2)
-        bootlist.append(f'{nr[0]:04d}')
-    desc= ", ".join(bootlist)
-    print(f'    boot order: {desc}')
-
-def print_ascii(var):
-    print(f"    string: {var.data.decode()}")
-
 def print_sigdb(var):
     for item in var.sigdb:
         name = guids.name(item.guid)
@@ -137,35 +112,14 @@ def print_sigdb(var):
             cn = item.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
             print(f'      x509 CN={cn.value}')
 
-print_funcs = {
-    'SecureBootEnable' : print_bool,
-    'CustomMode'       : print_bool,
-
-    'Lang'             : print_ascii,
-    'PlatformLang'     : print_ascii,
-
-    'BootOrder'        : print_boot_list,
-    'BootNext'         : print_boot_list,
-    'Boot0000'         : print_boot_entry,
-    'Boot0001'         : print_boot_entry,
-    'Boot0002'         : print_boot_entry,
-    'Boot0003'         : print_boot_entry,
-    'Boot0004'         : print_boot_entry,
-    'Boot0005'         : print_boot_entry,
-    'Boot0006'         : print_boot_entry,
-    'Boot0007'         : print_boot_entry,
-    'Boot0008'         : print_boot_entry,
-    'Boot0009'         : print_boot_entry,
-}
-
 def print_var(var, verbose, hexdump):
     name = str(var.name)
     gname = guids.name(var.guid)
     size = len(var.data)
     print(f'  - name={name} guid={gname} size={size}')
-    pfunc = print_funcs.get(name)
-    if pfunc:
-        pfunc(var)
+    desc = var.fmt_data()
+    if desc:
+        print(f'    {desc}')
     if var.sigdb:
         print_sigdb(var)
     if verbose:

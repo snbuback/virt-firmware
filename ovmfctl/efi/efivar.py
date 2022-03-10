@@ -5,6 +5,8 @@ import struct
 import datetime
 
 from ovmfctl.efi import guids
+from ovmfctl.efi import ucs16
+from ovmfctl.efi import devpath
 from ovmfctl.efi import siglist
 
 ##################################################################################################
@@ -64,6 +66,9 @@ efivar_defaults = {
 }
 
 sigdb_names = ("PK", "KEK", "db", "dbx", "MokList")
+bool_names  = ('SecureBootEnable', 'CustomMode')
+ascii_names = ('Lang', 'PlatformLang')
+blist_names = ('BootOrder', 'BootNext')
 
 ##################################################################################################
 
@@ -154,3 +159,53 @@ class EfiVar:
         else:
             self.data = b'\x00'
         self.update_time()
+
+    def fmt_bool(self):
+        if self.data[0]:
+            return 'bool: ON'
+        return 'bool: off'
+
+    def fmt_ascii(self):
+        string = self.data.decode().rstrip('\0')
+        return f'ascii: {string}'
+
+    def fmt_boot_entry(self):
+        (attr, pathsize) = struct.unpack_from('=LH', self.data)
+        name = ucs16.from_ucs16(self.data, 6)
+        path = self.data[ name.size() + 6 :
+                          name.size() + 6 + pathsize ]
+        obj = devpath.DevicePath(path)
+        return f'boot entry: name={name} devpath={obj}'
+
+    def fmt_boot_list(self):
+        bootlist = []
+        for pos in range(len(self.data) >> 1):
+            nr = struct.unpack_from('=H', self.data, pos * 2)
+            bootlist.append(f'{nr[0]:04d}')
+            desc= ", ".join(bootlist)
+        return f'boot order: {desc}'
+
+    def fmt_data(self):
+        name = str(self.name)
+        if name in bool_names:
+            return self.fmt_bool()
+        if name in ascii_names:
+            return self.fmt_ascii()
+        if name in blist_names:
+            return self.fmt_boot_list()
+        if name.startswith('Boot0'):
+            return self.fmt_boot_entry()
+
+        if len(self.data) in (1, 2, 4, 8):
+            name = {
+                1 : 'byte',
+                2 : 'word',
+                4 : 'dword',
+                8 : 'qword',
+            }
+            n = name[len(self.data)]
+            d = bytearray(self.data)
+            d.reverse()
+            return f'{n}: 0x{d.hex()}'
+
+        return None
