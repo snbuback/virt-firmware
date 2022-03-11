@@ -2,7 +2,9 @@
 """ efi variables """
 
 import struct
+import logging
 import datetime
+import collections
 
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
@@ -74,7 +76,7 @@ blist_names = ('BootOrder', 'BootNext')
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 class EfiVar:
-    """  class for efi variables"""
+    """  class for efi variables """
 
     def __init__(self, name,
                  guid = None,
@@ -209,3 +211,45 @@ class EfiVar:
             return f'{n}: 0x{d.hex()}'
 
         return None
+
+class EfiVarList(collections.UserDict):
+    """  class for efi variable list """
+
+    def create(self, name):
+        logging.info('create variable %s', name)
+        var = EfiVar(ucs16.from_string(name))
+        self[name] = var
+        return var
+
+    def delete(self, delete):
+        for item in delete:
+            if self.get(item):
+                logging.info('delete variable: %s', item)
+                del self[item]
+            else:
+                logging.warning('variable %s not found', item)
+
+    def set_bool(self, name, value):
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('set variable %s: %s', name, value)
+        var.set_bool(value)
+
+    def add_cert(self, name, owner, filename, replace = False):
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        if replace:
+            logging.info('clear %s sigdb', name)
+            var.sigdb_clear()
+        logging.info('add %s cert %s', name, filename)
+        var.sigdb_add_cert(guids.parse_str(owner), filename)
+
+    def add_dummy_dbx(self, owner):
+        var = self.get('dbx')
+        if var:
+            return
+        logging.info("add dummy dbx entry")
+        var = self.create('dbx')
+        var.sigdb_add_dummy(guids.parse_str(owner))

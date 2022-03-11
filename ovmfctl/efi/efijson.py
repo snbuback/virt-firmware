@@ -19,7 +19,19 @@ class EfiJSONEncoder(json.JSONEncoder):
             retval['time'] = o.bytes_time().hex()
         return retval
 
+    def efivarlist(self, o):
+        l = []
+        for (key, item) in o.items():
+            l.append(item)
+        r = {
+            'version' : 2,
+            'variables' : l,
+        }
+        return r
+
     def default(self, o):
         if isinstance(o, efivar.EfiVar):
             return self.efivar(o)
+        if isinstance(o, efivar.EfiVarList):
+            return self.efivarlist(o)
         return json.JSONEncoder.default(self, o)

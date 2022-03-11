@@ -20,7 +20,7 @@ from ovmfctl.efi import efijson
 
 def parse_vars(data, start, end):
     pos = start
-    varlist = {}
+    varlist = efivar.EfiVarList()
     while pos < end:
         (magic, state, attr, count) = struct.unpack_from("=HBxLQ", data, pos)
         if magic != 0x55aa:
@@ -155,63 +155,20 @@ def write_var(var):
         blob += b'\0'
     return blob
 
-def vars_delete(varlist, delete):
-    for item in delete:
-        if varlist.get(item):
-            logging.info('delete variable: %s', item)
-            del varlist[item]
-        else:
-            logging.warning('variable %s not found', item)
-
-def var_create(varlist, name):
-    logging.info('create variable %s', name)
-    var = efivar.EfiVar(ucs16.from_string(name))
-    varlist[name] = var
-    return var
-
-def var_set_bool(varlist, name, value):
-    var = varlist.get(name)
-    if not var:
-        var = var_create(varlist, name)
-
-    logging.info('set variable %s: %s', name, value)
-    var.set_bool(value)
-
-def var_add_cert(varlist, name, owner, filename, replace = False):
-    var = varlist.get(name)
-    if not var:
-        var = var_create(varlist, name)
-    if replace:
-        logging.info('clear %s sigdb', name)
-        var.sigdb_clear()
-
-    logging.info('add %s cert %s', name, filename)
-    var.sigdb_add_cert(guids.parse_str(owner), filename)
-
-def var_add_dummy_dbx(varlist, owner):
-    var = varlist.get('dbx')
-    if var:
-        return
-
-    logging.info("add dummy dbx entry")
-    var = var_create(varlist, 'dbx')
-    var.sigdb_add_dummy(guids.parse_str(owner))
-
-
 ##################################################################################################
 # main
 
 def enable_secureboot(varlist):
-    var_add_dummy_dbx(varlist, guids.OvmfEnrollDefaultKeys)
-    var_set_bool(varlist, 'SecureBootEnable', True)
-    var_set_bool(varlist, 'CustomMode', False)
+    varlist.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
+    varlist.set_bool('SecureBootEnable', True)
+    varlist.set_bool('CustomMode', False)
 
 def platform_redhat(varlist):
     redhat_pk = pkg_resources.resource_filename('ovmfctl',
                                                 'certs/RedHatSecureBootPKKEKkey1.pem')
-    var_add_cert(varlist, 'PK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
-    var_add_cert(varlist, 'KEK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
-    var_add_dummy_dbx(varlist, guids.OvmfEnrollDefaultKeys)
+    varlist.add_cert('PK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
+    varlist.add_cert('KEK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
+    varlist.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
 
 def microsoft_keys(varlist):
     ms_kek = pkg_resources.resource_filename('ovmfctl',
@@ -220,9 +177,9 @@ def microsoft_keys(varlist):
                                              'certs/MicrosoftWindowsProductionPCA2011.pem')
     ms_3rd = pkg_resources.resource_filename('ovmfctl',
                                              'certs/MicrosoftCorporationUEFICA2011.pem')
-    var_add_cert(varlist, 'KEK', guids.MicrosoftVendor, ms_kek, False)
-    var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_win, False) # windows
-    var_add_cert(varlist, 'db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
+    varlist.add_cert('KEK', guids.MicrosoftVendor, ms_kek, False)
+    varlist.add_cert('db', guids.MicrosoftVendor, ms_win, False) # windows
+    varlist.add_cert('db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
 
 # pylint: disable=too-many-branches,too-many-statements
 def main():
@@ -303,34 +260,34 @@ def main():
                 sigdb.extract_certs(key)
 
     if options.delete:
-        vars_delete(varlist, options.delete)
+        varlist.delete(options.delete)
 
     if options.set_true:
         for item in options.set_true:
-            varlist[item]['data'] = b'\x01'
+            varlist.set_bool(item, True)
 
     if options.set_false:
         for item in options.set_false:
-            varlist[item]['data'] = b'\x00'
+            varlist.set_bool(item, False)
 
     if options.redhat:
         platform_redhat(varlist)
         microsoft_keys(varlist)
 
     if options.pk:
-        var_add_cert(varlist, 'PK', options.pk[0], options.pk[1], True)
+        varlist.add_cert('PK', options.pk[0], options.pk[1], True)
 
     if options.kek:
         for item in options.kek:
-            var_add_cert(varlist, 'KEK', item[0], item[1])
+            varlist.add_cert('KEK', item[0], item[1])
 
     if options.db:
         for item in options.db:
-            var_add_cert(varlist, 'db', item[0], item[1])
+            varlist.add_cert('db', item[0], item[1])
 
     if options.mok:
         for item in options.mok:
-            var_add_cert(varlist, 'MokList', item[0], item[1])
+            varlist.add_cert('MokList', item[0], item[1])
 
     if options.secureboot:
         enable_secureboot(varlist)
