@@ -2,7 +2,6 @@
 """ print and edit ovmf varstore files """
 import sys
 import json
-import struct
 import logging
 import optparse
 import pkg_resources
@@ -10,68 +9,8 @@ import pkg_resources
 from cryptography import x509
 
 from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
-from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
-
-
-##################################################################################################
-# parse stuff
-
-def parse_vars(data, start, end):
-    pos = start
-    varlist = efivar.EfiVarList()
-    while pos < end:
-        (magic, state, attr, count) = struct.unpack_from("=HBxLQ", data, pos)
-        if magic != 0x55aa:
-            break
-        (pk, nsize, dsize) = struct.unpack_from("=LLL", data, pos + 32)
-
-        if state == 0x3f:
-            var = efivar.EfiVar(ucs16.from_ucs16(data, pos + 44 + 16),
-                                guid = guids.parse_bin(data, pos + 44),
-                                attr = attr,
-                                data = data[pos + 44 + 16 + nsize :
-                                            pos + 44 + 16 + nsize + dsize],
-                                count = count,
-                                pkidx = pk)
-            var.parse_time(data, pos + 16)
-            varlist[str(var.name)] = var
-
-        pos = pos + 44 + 16 + nsize + dsize
-        pos = (pos + 3) & ~3 # align
-    return varlist
-
-def parse_varstore(file, data, start):
-    guid = guids.parse_bin(data, start)
-    (size, storefmt, state) = struct.unpack_from("=LBB", data, start + 16)
-    logging.debug('varstore=%s size=0x%x format=0x%x state=0x%x',
-                  guids.name(guid), size, storefmt, state)
-    if str(guid) != guids.AuthVars:
-        logging.error('%s: unknown varstore guid', file)
-        sys.exit(1)
-    if storefmt != 0x5a:
-        logging.error('%s: unknown varstore format', file)
-        sys.exit(1)
-    if state != 0xfe:
-        logging.error('%s: unknown varstore state', file)
-        sys.exit(1)
-    return (start + 16 + 12, start + size)
-
-def parse_volume(file, data):
-    guid = guids.parse_bin(data, 16)
-    (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
-        struct.unpack_from("=QLLHHHxBLL", data, 32)
-    logging.debug('vol=%s vlen=0x%x rev=%d blocks=%d*%d (0x%x)',
-                  guids.name(guid), vlen, rev,
-                  blocks, blksize, blocks * blksize)
-    if sig != 0x4856465f:
-        logging.error('%s: not a firmware volume', file)
-        sys.exit(1)
-    if str(guid) != guids.NvData:
-        logging.error('%s: not a variable store', file)
-        sys.exit(1)
-    return parse_varstore(file, data, hlen)
+from ovmfctl.efi import edk2
 
 
 ##################################################################################################
@@ -133,27 +72,6 @@ def print_vars(varlist, verbose, hexdump):
     logging.info("printing variables ...")
     for (key, item) in varlist.items():
         print_var(item, verbose, hexdump)
-
-
-##################################################################################################
-# write vars
-
-def write_var(var):
-    blob = struct.pack("=HBxLQ",
-                       0x55aa, 0x3f,
-                       var.attr,
-                       var.count)
-    blob += var.bytes_time()
-    blob += struct.pack("=LLL",
-                        var.pkidx,
-                        var.name.size(),
-                        len(var.data))
-    blob += var.guid.bytes_le
-    blob += bytes(var.name)
-    blob += var.data
-    while len(blob) & 3:
-        blob += b'\0'
-    return blob
 
 
 ##################################################################################################
@@ -246,13 +164,8 @@ def main():
         logging.error("no input file specified (try -h for help)")
         sys.exit(1)
 
-    logging.info('reading varstore from %s', options.input)
-    with open(options.input, "rb") as f:
-        infile = f.read()
-
-    (start, end) = parse_volume(options.input, infile)
-    logging.info('var store range: 0x%x -> 0x%x', start, end)
-    varlist = parse_vars(infile, start, end)
+    edk2store = edk2.Edk2VarStore(options.input)
+    varlist = edk2store.get_varlist()
 
     if options.extract:
         for (key, item) in varlist.items():
@@ -298,20 +211,7 @@ def main():
         print_vars(varlist, options.verbose, options.hexdump)
 
     if options.output:
-        outfile = infile[:start]
-        for (key, item) in varlist.items():
-            outfile += write_var(item)
-
-        if len(outfile) > end:
-            logging.error("varstore is too small")
-            sys.exit(1)
-
-        outfile += b''.zfill(end - len(outfile))
-        outfile += infile[end:]
-
-        logging.info('writing varstore to %s', options.output)
-        with open(options.output, "wb") as f:
-            f.write(outfile)
+        edk2store.write_varstore(options.output, varlist)
 
     return 0
 
