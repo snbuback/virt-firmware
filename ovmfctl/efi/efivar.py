@@ -221,13 +221,12 @@ class EfiVarList(collections.UserDict):
         self[name] = var
         return var
 
-    def delete(self, delete):
-        for item in delete:
-            if self.get(item):
-                logging.info('delete variable: %s', item)
-                del self[item]
-            else:
-                logging.warning('variable %s not found', item)
+    def delete(self, name):
+        if self.get(name):
+            logging.info('delete variable: %s', name)
+            del self[name]
+        else:
+            logging.warning('variable %s not found', name)
 
     def set_bool(self, name, value):
         var = self.get(name)

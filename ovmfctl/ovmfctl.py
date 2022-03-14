@@ -155,6 +155,7 @@ def write_var(var):
         blob += b'\0'
     return blob
 
+
 ##################################################################################################
 # main
 
@@ -260,7 +261,8 @@ def main():
                 sigdb.extract_certs(key)
 
     if options.delete:
-        varlist.delete(options.delete)
+        for name in options.delete:
+            varlist.delete(name)
 
     if options.set_true:
         for item in options.set_true:
