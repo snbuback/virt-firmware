@@ -4,7 +4,6 @@ import sys
 import json
 import logging
 import optparse
-import pkg_resources
 
 from cryptography import x509
 
@@ -76,29 +75,6 @@ def print_vars(varlist, verbose, hexdump):
 
 ##################################################################################################
 # main
-
-def enable_secureboot(varlist):
-    varlist.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
-    varlist.set_bool('SecureBootEnable', True)
-    varlist.set_bool('CustomMode', False)
-
-def platform_redhat(varlist):
-    redhat_pk = pkg_resources.resource_filename('ovmfctl',
-                                                'certs/RedHatSecureBootPKKEKkey1.pem')
-    varlist.add_cert('PK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
-    varlist.add_cert('KEK', guids.OvmfEnrollDefaultKeys, redhat_pk, True)
-    varlist.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
-
-def microsoft_keys(varlist):
-    ms_kek = pkg_resources.resource_filename('ovmfctl',
-                                             'certs/MicrosoftCorporationKEKCA2011.pem')
-    ms_win = pkg_resources.resource_filename('ovmfctl',
-                                             'certs/MicrosoftWindowsProductionPCA2011.pem')
-    ms_3rd = pkg_resources.resource_filename('ovmfctl',
-                                             'certs/MicrosoftCorporationUEFICA2011.pem')
-    varlist.add_cert('KEK', guids.MicrosoftVendor, ms_kek, False)
-    varlist.add_cert('db', guids.MicrosoftVendor, ms_win, False) # windows
-    varlist.add_cert('db', guids.MicrosoftVendor, ms_3rd, False) # 3rd party (shim.efi)
 
 # pylint: disable=too-many-branches,too-many-statements
 def main():
@@ -186,8 +162,8 @@ def main():
             varlist.set_bool(item, False)
 
     if options.redhat:
-        platform_redhat(varlist)
-        microsoft_keys(varlist)
+        varlist.enroll_platform_redhat()
+        varlist.add_microsoft_keys()
 
     if options.pk:
         varlist.add_cert('PK', options.pk[0], options.pk[1], True)
@@ -205,7 +181,7 @@ def main():
             varlist.add_cert('MokList', item[0], item[1])
 
     if options.secureboot:
-        enable_secureboot(varlist)
+        varlist.enable_secureboot()
 
     if options.print:
         print_vars(varlist, options.verbose, options.hexdump)

@@ -10,6 +10,7 @@ from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 from ovmfctl.efi import devpath
 from ovmfctl.efi import siglist
+from ovmfctl.efi import certs
 
 ##################################################################################################
 # constants
@@ -252,3 +253,18 @@ class EfiVarList(collections.UserDict):
         logging.info("add dummy dbx entry")
         var = self.create('dbx')
         var.sigdb_add_dummy(guids.parse_str(owner))
+
+    def enable_secureboot(self):
+        self.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
+        self.set_bool('SecureBootEnable', True)
+        self.set_bool('CustomMode', False)
+
+    def enroll_platform_redhat(self):
+        self.add_cert('PK', guids.OvmfEnrollDefaultKeys, certs.REDHAT_PK, True)
+        self.add_cert('KEK', guids.OvmfEnrollDefaultKeys, certs.REDHAT_PK, True)
+        self.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
+
+    def add_microsoft_keys(self):
+        self.add_cert('KEK', guids.MicrosoftVendor, certs.MS_KEK, False)
+        self.add_cert('db', guids.MicrosoftVendor, certs.MS_WIN, False)
+        self.add_cert('db', guids.MicrosoftVendor, certs.MS_3RD, False)
