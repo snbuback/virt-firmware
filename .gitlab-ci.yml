@@ -8,19 +8,11 @@ pylint:
   script:
     - make pylint
 
-ovmfctl:
+tests:
   script:
     - make install
     - make test-ovmfctl
-
-ovmfdump:
-  script:
-    - make install
     - make test-ovmfdump
-
-unittest:
-  script:
-    - make install
     - make test-unittest
 
 package:
