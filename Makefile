@@ -38,7 +38,7 @@ install:
 uninstall:
 	python3 -m pip uninstall ovmfctl
 
-test: test-ovmfdump test-ovmfctl
+test: test-ovmfdump test-ovmfctl test-unittest
 
 test-ovmfdump:
 	ovmfdump --help
@@ -55,6 +55,9 @@ test-ovmfctl:
 	diff vars-1.fd vars-2.fd
 	ovmfctl -i vars-1.fd --print --verbose
 	rm -f vars-1.fd vars-2.fd vars.json *.pem
+
+test-unittest:
+	python tests/tests.py
 
 clean:
 	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
