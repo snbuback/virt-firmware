@@ -66,6 +66,11 @@ efivar_defaults = {
                   EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS),
         'guid' : guids.EfiImageSecurityDatabase,
     },
+    'MokList' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : '605dab50-e046-4300-abb6-3dd810dd8b23',
+    },
 }
 
 sigdb_names = ("PK", "KEK", "db", "dbx", "MokList")
