@@ -57,7 +57,7 @@ test-ovmfctl:
 	rm -f vars-1.fd vars-2.fd vars.json *.pem
 
 test-unittest:
-	python tests/tests.py
+	python3 tests/tests.py
 
 clean:
 	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
