@@ -19,7 +19,7 @@ class TestsEdk2(unittest.TestCase):
         varlist.enable_secureboot()
         blob = store.bytes_varstore(varlist)
 
-    @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no secboot vars file')
+    @unittest.skipUnless(os.path.exists(VARS_SECBOOT), 'no secboot vars file')
     def test_json(self):
         store = edk2.Edk2VarStore(VARS_SECBOOT)
         varlist = store.get_varlist()
