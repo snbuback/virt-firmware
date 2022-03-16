@@ -50,9 +50,11 @@ test-ovmfdump:
 test-ovmfctl:
 	ovmfctl --help
 	ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
-	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars.fd --enroll-redhat --secure-boot
-	ovmfctl -i vars.fd --print --verbose
-	rm -f vars.fd *.pem
+	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars-1.fd --write-json vars.json --enroll-redhat --secure-boot
+	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars-2.fd --set-json vars.json
+	diff vars-1.fd vars-2.fd
+	ovmfctl -i vars-1.fd --print --verbose
+	rm -f vars-1.fd vars-2.fd vars.json *.pem
 
 clean:
 	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist

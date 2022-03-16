@@ -98,6 +98,9 @@ def main():
                       action = 'append', type = 'string',
                       help = 'set variable VAR to false, can be specified multiple times',
                       metavar = 'VAR')
+    parser.add_option('--set-json', dest = 'set_json', type = 'string',
+                      help = 'set variable from json dump FILE',
+                      metavar = 'FILE')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
                       'from FILE and with owner GUID',
@@ -131,6 +134,8 @@ def main():
                       help = 'print variable hexdumps')
     parser.add_option('-o', '--output', dest = 'output', type = 'string',
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
+    parser.add_option('--write-json', dest = 'write_json', type = 'string',
+                      help = 'write json dump to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
@@ -161,6 +166,13 @@ def main():
         for item in options.set_false:
             varlist.set_bool(item, False)
 
+    if options.set_json:
+        with open(options.set_json, "r", encoding = 'utf-8') as f:
+            l = json.loads(f.read(), object_hook = efijson.efi_decode)
+        for (key, item) in l.items():
+            logging.info('set variable %s from %s', key, options.set_json)
+            varlist[key] = item
+
     if options.redhat:
         varlist.enroll_platform_redhat()
         varlist.add_microsoft_keys()
@@ -188,6 +200,11 @@ def main():
 
     if options.output:
         edk2store.write_varstore(options.output, varlist)
+
+    if options.write_json:
+        j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
+        with open(options.write_json, "w", encoding = 'utf-8') as f:
+            f.write(j)
 
     return 0
 
