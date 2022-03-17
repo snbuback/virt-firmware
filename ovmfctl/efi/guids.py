@@ -19,6 +19,7 @@ EfiCertSha256                = "c1c41626-504c-4092-aca9-41f936934328"
 
 MicrosoftVendor              = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 OvmfEnrollDefaultKeys        = "a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
+Shim                         = "605dab50-e046-4300-abb6-3dd810dd8b23"
 
 OvmfGuidList                 = "96b582de-1fb2-45f7-baea-a366c55a082d"
 OvmfSevMetadataOffset        = "dc886566-984a-4798-a75e-5585a7bf67cc"
@@ -60,6 +61,7 @@ name_table = {
     # signature owner
     MicrosoftVendor                        : "MicrosoftVendor",
     OvmfEnrollDefaultKeys                  : "OvmfEnrollDefaultKeys",
+    Shim                                   : "Shim",
 
     # ovmf metadata
     OvmfGuidList                           : "OvmfGuidList",
