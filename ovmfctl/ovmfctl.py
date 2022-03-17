@@ -49,6 +49,9 @@ def print_sigdb(var):
         if item.x509:
             cn = item.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
             print(f'      x509 CN={cn.value}')
+        elif str(item.guid) == guids.EfiCertSha256:
+            for sig in list(item):
+                print(f"      sha256 {sig['data'].hex()}")
 
 def print_var(var, verbose, hexdump):
     name = str(var.name)
