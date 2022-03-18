@@ -8,6 +8,7 @@ import optparse
 from cryptography import x509
 
 from ovmfctl.efi import guids
+from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 from ovmfctl.efi import edk2
 
@@ -152,12 +153,12 @@ def main():
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    if not options.input:
-        logging.error("no input file specified (try -h for help)")
-        sys.exit(1)
-
-    edk2store = edk2.Edk2VarStore(options.input)
-    varlist = edk2store.get_varlist()
+    if options.input:
+        edk2store = edk2.Edk2VarStore(options.input)
+        varlist = edk2store.get_varlist()
+    else:
+        edk2store = None
+        varlist = efivar.EfiVarList()
 
     if options.extract:
         for (key, item) in varlist.items():
@@ -218,6 +219,9 @@ def main():
         print_vars(varlist, options.verbose, options.hexdump)
 
     if options.output:
+        if edk2store is None:
+            logging.error("no input file specified (needed as edk2 varstore template)")
+            sys.exit(1)
         edk2store.write_varstore(options.output, varlist)
 
     if options.write_json:
