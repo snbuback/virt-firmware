@@ -121,10 +121,12 @@ def main():
                       'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
     parser.add_option('--add-db-hash', dest = 'db_hash',  action = 'append', nargs = 2,
-                      help = 'add sha256 HASH to db, with owner GUID, can be specified multiple times',
+                      help = 'add sha256 HASH to db, with owner GUID, ' +
+                      'can be specified multiple times',
                       metavar = ('GUID', 'HASH'))
     parser.add_option('--add-mok-hash', dest = 'mok_hash',  action = 'append', nargs = 2,
-                      help = 'add sha256 HASH to MokList, with owner GUID, can be specified multiple times',
+                      help = 'add sha256 HASH to MokList, with owner GUID, ' +
+                      'can be specified multiple times',
                       metavar = ('GUID', 'HASH'))
     parser.add_option('--enroll-redhat', dest = 'redhat',
                       action = 'store_true', default = False,
