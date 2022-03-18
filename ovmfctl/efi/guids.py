@@ -73,6 +73,7 @@ name_table = {
     "00f771de-1a7e-4fcb-890e-68c77e2fb44e" : "SevProcessorReset",
 
     # misc
+    "00000000-0000-0000-0000-000000000000" : "Zero",
     NotValid                               : "NotValid",
 }
 
@@ -82,8 +83,20 @@ def name(guid):
         return str(guid)
     return f'guid:{nstr}'
 
+def from_name(nstr):
+    nstr = nstr.removeprefix('guid:')
+    for (u, n) in name_table.items():
+        if n.upper() == nstr.upper():
+            return u
+    return None
+
 def parse_bin(data, offset):
     return uuid.UUID(bytes_le = data[offset:offset+16])
 
 def parse_str(nstr):
-    return uuid.UUID(f'urn:uuid:{nstr}')
+    try:
+        return uuid.UUID(f'urn:uuid:{nstr}')
+    except:
+        pass
+    ustr = from_name(nstr)
+    return uuid.UUID(f'urn:uuid:{ustr}')
