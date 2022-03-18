@@ -120,6 +120,12 @@ def main():
                       help = 'add x509 cert to MokList, loaded in pem format ' +
                       'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
+    parser.add_option('--add-db-hash', dest = 'db_hash',  action = 'append', nargs = 2,
+                      help = 'add sha256 HASH to db, with owner GUID, can be specified multiple times',
+                      metavar = ('GUID', 'HASH'))
+    parser.add_option('--add-mok-hash', dest = 'mok_hash',  action = 'append', nargs = 2,
+                      help = 'add sha256 HASH to MokList, with owner GUID, can be specified multiple times',
+                      metavar = ('GUID', 'HASH'))
     parser.add_option('--enroll-redhat', dest = 'redhat',
                       action = 'store_true', default = False,
                       help = 'enroll default certificates for redhat platform')
@@ -194,6 +200,14 @@ def main():
     if options.mok:
         for item in options.mok:
             varlist.add_cert('MokList', item[0], item[1])
+
+    if options.db_hash:
+        for item in options.db_hash:
+            varlist.add_hash('db', item[0], item[1])
+
+    if options.mok_hash:
+        for item in options.mok_hash:
+            varlist.add_hash('MokList', item[0], item[1])
 
     if options.secureboot:
         varlist.enable_secureboot()

@@ -124,6 +124,31 @@ class EfiSigDB(collections.UserList):
                 return
         self.append(siglist)
 
+    def has_sig(self, sigtype, sigdata):
+        for siglist in list(self):
+            if str(siglist.guid) == sigtype:
+                for item in list(siglist):
+                    if item['data'] == sigdata:
+                        return True
+        return False
+
+    def get_siglist(self, sigtype):
+        for siglist in list(self):
+            if str(siglist.guid) == sigtype:
+                return siglist
+        siglist = EfiSigList(guid = guids.parse_str(sigtype))
+        self.append(siglist)
+        return siglist
+
+    def add_hash(self, guid, data):
+        if len(data) != 32:
+            raise ValueError('incorrect hash data size')
+        if self.has_sig(guids.EfiCertSha256, data):
+            logging.info('hash already present, skipping')
+            return
+        siglist = self.get_siglist(guids.EfiCertSha256)
+        siglist.add_sig(guid, data)
+
     def add_dummy(self, guid):
         siglist = EfiSigList(guid = guids.parse_str(guids.EfiCertSha256))
         siglist.add_sig(guid, hashlib.sha256(b'').digest())

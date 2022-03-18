@@ -155,6 +155,13 @@ class EfiVar:
         self.data = bytes(self.sigdb)
         self.update_time()
 
+    def sigdb_add_hash(self, guid, hashdata):
+        if self.sigdb is None:
+            raise RuntimeError
+        self.sigdb.add_hash(guid, hashdata)
+        self.data = bytes(self.sigdb)
+        self.update_time()
+
     def sigdb_add_dummy(self, guid):
         if self.sigdb is None:
             raise RuntimeError
@@ -257,6 +264,14 @@ class EfiVarList(collections.UserDict):
             var.sigdb_clear()
         logging.info('add %s cert %s', name, filename)
         var.sigdb_add_cert(guids.parse_str(owner), filename)
+
+    def add_hash(self, name, owner, hashdata):
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('add %s hash %s', name, hashdata)
+        var.sigdb_add_hash(guids.parse_str(owner),
+                           bytes.fromhex(hashdata))
 
     def add_dummy_dbx(self, owner):
         var = self.get('dbx')
