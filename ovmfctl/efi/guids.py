@@ -96,7 +96,7 @@ def parse_bin(data, offset):
 def parse_str(nstr):
     try:
         return uuid.UUID(f'urn:uuid:{nstr}')
-    except:
+    except ValueError:
         pass
     ustr = from_name(nstr)
     return uuid.UUID(f'urn:uuid:{ustr}')
