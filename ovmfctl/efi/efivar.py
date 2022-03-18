@@ -205,6 +205,7 @@ class EfiVar:
         obj = devpath.DevicePath(self.data)
         return f'device path: {obj}'
 
+    # pylint: disable=too-many-return-statements
     def fmt_data(self):
         name = str(self.name)
         if name in bool_names:
