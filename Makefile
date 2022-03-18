@@ -7,6 +7,7 @@ PYLINT_OPTS	+= -d too-many-locals	# happens when unpacking structss
 PYLINT_OPTS	+= -d R0801		# duplicate-code (simliar cmd line opts)
 PYLINT_OPTS	+= -d deprecated-module			# TODO
 PYLINT_OPTS	+= -d missing-function-docstring	# TODO
+PYLINT_OPTS	+= --extension-pkg-allow-list=crc32c
 
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz

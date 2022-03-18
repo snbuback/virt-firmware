@@ -7,15 +7,29 @@ from virt.firmware.efi import efijson
 
 from virt.firmware.varstore import edk2
 from virt.firmware.varstore import linux
+from virt.firmware.varstore import aws
 
 VARS_EMPTY   = "/usr/share/OVMF/OVMF_VARS.fd"
 VARS_SECBOOT = "/usr/share/OVMF/OVMF_VARS.secboot.fd"
 
+TEST_DATA    = os.path.join(os.path.dirname(__file__), "data")
+TEST_AWS     = os.path.join(TEST_DATA, 'secboot.aws')
+
 class TestsEdk2(unittest.TestCase):
 
     @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
-    def test_probe(self):
+    def test_probe_edk2_good(self):
         self.assertTrue(edk2.Edk2VarStore.probe(VARS_EMPTY))
+
+    def test_probe_edk2_bad(self):
+        self.assertFalse(edk2.Edk2VarStore.probe(TEST_AWS))
+
+    def test_probe_aws_good(self):
+        self.assertTrue(aws.AwsVarStore.probe(TEST_AWS))
+
+    @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
+    def test_probe_aws_bad(self):
+        self.assertFalse(aws.AwsVarStore.probe(VARS_EMPTY))
 
     @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
     def test_enroll(self):
@@ -40,6 +54,9 @@ class TestsEdk2(unittest.TestCase):
     @unittest.skipUnless(os.path.exists('/sys/firmware/efi/efivars'), 'no efivars fs')
     def test_parse_linux(self):
         varlist = linux.LinuxVarStore.get_varlist()
+
+    def test_parse_aws(self):
+        varlist = aws.AwsVarStore(TEST_AWS)
 
 if __name__ == '__main__':
     unittest.main()
