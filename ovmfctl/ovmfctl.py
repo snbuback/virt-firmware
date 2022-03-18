@@ -102,7 +102,7 @@ def main():
                       help = 'set variable VAR to false, can be specified multiple times',
                       metavar = 'VAR')
     parser.add_option('--set-json', dest = 'set_json', type = 'string',
-                      help = 'set variable from json dump FILE',
+                      help = 'set variables from json dump FILE',
                       metavar = 'FILE')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
