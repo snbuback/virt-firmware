@@ -3,6 +3,7 @@ import json
 import unittest
 
 from ovmfctl.efi import edk2
+from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 
 VARS_EMPTY   = "/usr/share/OVMF/OVMF_VARS.fd"
@@ -25,6 +26,10 @@ class TestsEdk2(unittest.TestCase):
         varlist = store.get_varlist()
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
         l = json.loads(j, object_hook = efijson.efi_decode)
+
+    def test_add_hash(self):
+        varlist = efivar.EfiVarList()
+        varlist.add_hash('db', 'shim', '70183c6c50978ee60f61d8a60580d5e0022114f20f3b99715617054e916770a4')
 
 if __name__ == '__main__':
     unittest.main()
