@@ -226,6 +226,7 @@ def main():
 
     if options.write_json:
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
+        logging.info('writing json varstore to %s', options.write_json)
         with open(options.write_json, "w", encoding = 'utf-8') as f:
             f.write(j)
 
