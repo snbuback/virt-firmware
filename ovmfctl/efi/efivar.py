@@ -77,6 +77,7 @@ sigdb_names = ("PK", "KEK", "db", "dbx", "MokList")
 bool_names  = ('SecureBootEnable', 'CustomMode')
 ascii_names = ('Lang', 'PlatformLang')
 blist_names = ('BootOrder', 'BootNext')
+dpath_names = ('ConIn', 'ConOut', 'ErrOut')
 
 ##################################################################################################
 
@@ -193,6 +194,10 @@ class EfiVar:
             desc= ", ".join(bootlist)
         return f'boot order: {desc}'
 
+    def fmt_dev_path(self):
+        obj = devpath.DevicePath(self.data)
+        return f'device path: {obj}'
+
     def fmt_data(self):
         name = str(self.name)
         if name in bool_names:
@@ -201,6 +206,8 @@ class EfiVar:
             return self.fmt_ascii()
         if name in blist_names:
             return self.fmt_boot_list()
+        if name in dpath_names:
+            return self.fmt_dev_path()
         if name.startswith('Boot0'):
             return self.fmt_boot_entry()
 
