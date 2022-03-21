@@ -73,7 +73,7 @@ efivar_defaults = {
     },
 }
 
-sigdb_names = ("PK", "KEK", "db", "dbx", "MokList")
+sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "TlsCaCertificate")
 bool_names  = ('SecureBootEnable', 'CustomMode')
 ascii_names = ('Lang', 'PlatformLang')
 blist_names = ('BootOrder', 'BootNext')
