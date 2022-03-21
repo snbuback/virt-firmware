@@ -249,7 +249,7 @@ def print_one_volume(data, offset, indent):
     guid = guids.parse_bin(data, offset + 16)
     (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
         struct.unpack_from("=QLLHHHxBLL", data, offset + 32)
-    print(f'{offset:06x}: {"":{indent}s}vol={guids.name(guid)} '
+    print(f'{offset:06x}:{"":{indent+1}s}vol={guids.name(guid)} '
           f'vlen=0x{vlen:x} rev={rev} blocks={blocks}*{blksize} '
           f'(0x{blocks * blksize:x})')
     if str(guid) == guids.Ffs:
@@ -272,7 +272,7 @@ def print_all_volumes(data, indent):
     while pos < len(data):
         size = print_one_volume(data, pos, indent)
         if size == 0:
-            print(f'{pos:06x}: {"":{indent}s}stop: volume size is zero')
+            print(f'{pos:06x}:{"":{indent+1}s}stop: volume size is zero')
             break
         pos += size
 
