@@ -20,12 +20,12 @@ lint pylint:
 	pylint $(PYLINT_OPTS) ovmfctl/
 
 .PHONY: dist
-tarball dist $(PKG_TARBALL):
+dist tarball $(PKG_TARBALL):
 	rm -rf dist
 	python3 -m build
 	twine check dist/*
 
-rpm package: $(PKG_TARBALL)
+rpm rpms package: $(PKG_TARBALL)
 	rm -rf rpms
 	mkdir -p rpms/src
 	pyp2rpm -d rpms/src --srpm $(PKG_TARBALL)
