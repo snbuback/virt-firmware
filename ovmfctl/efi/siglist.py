@@ -48,7 +48,11 @@ class EfiSigList(collections.UserList):
             if len(self):
                 raise RuntimeError('x509 signature list not empty')
             if self.x509 is None:
-                self.x509 = x509.load_der_x509_certificate(data)
+                try:
+                    self.x509 = x509.load_der_x509_certificate(data)
+                except ValueError:
+                    logging.error("x509: failed to load certificate")
+                    self.x509 = None
         sig = { 'guid' : guid,
                 'data' : data }
         self.append(sig)
