@@ -8,13 +8,6 @@ pylint:
   script:
     - make pylint
 
-tests:
-  script:
-    - make install
-    - make test-ovmfctl
-    - make test-ovmfdump
-    - make test-unittest
-
 package:
   script:
     - dnf install -y fedora-packager pyp2rpm createrepo python3-devel python3-build twine
@@ -23,6 +16,21 @@ package:
     paths:
       - dist
       - rpms
+
+.testscript: &testscript
+  - make install
+  - make test-ovmfctl
+  - make test-ovmfdump
+  - make test-unittest
+
+test-fedora:
+  script:
+    - *testscript
+
+test-centos8:
+  image: quay.io/centos/centos:stream8
+  script:
+    - *testscript
 
 pages:
   stage: deploy
