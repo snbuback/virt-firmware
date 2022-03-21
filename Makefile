@@ -10,6 +10,9 @@ PYLINT_OPTS	+= -d missing-function-docstring	# TODO
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/ovmfctl-$(PKG_VERSION).tar.gz
 
+FW_IMAGE	:= $(wildcard /usr/share/edk2/ovmf/*.fd)
+FW_IMAGE	+= $(wildcard /usr/share/edk2/aarch64/*.fd)
+
 default:
 	@echo "targets: lint install uninstall clean"
 
@@ -42,10 +45,7 @@ test: test-ovmfdump test-ovmfctl test-unittest
 
 test-ovmfdump:
 	ovmfdump --help
-	ovmfdump -i /usr/share/edk2/aarch64/QEMU_EFI.fd
-	ovmfdump -i /usr/share/edk2/aarch64/QEMU_VARS.fd
-	ovmfdump -i /usr/share/OVMF/OVMF_CODE.secboot.fd
-	ovmfdump -i /usr/share/OVMF/OVMF_VARS.secboot.fd
+	for i in $(FW_IMAGE); do ovmfdump -i $$i || exit 1; done
 
 test-ovmfctl:
 	ovmfctl --help
