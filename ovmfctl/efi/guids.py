@@ -85,7 +85,8 @@ def name(guid):
     return f'guid:{nstr}'
 
 def from_name(nstr):
-    nstr = nstr.removeprefix('guid:')
+    if nstr.startswith('guid:'):
+        nstr.replace('guid:', '', 1)
     for (u, n) in name_table.items():
         if n.upper() == nstr.upper():
             return u
