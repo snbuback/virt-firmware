@@ -1,9 +1,9 @@
 image: registry.fedoraproject.org/fedora:latest
 
 before_script:
-  - dnf install -y make python3-pip python3-setuptools python3-cryptography edk2-ovmf tree diffutils
+  - dnf install -y make python3-pip python3-setuptools python3-devel python3-cryptography edk2-ovmf tree diffutils
   - dnf install -y edk2-aarch64 || true # optional
-  - pip3 install --user pylint crc32c
+  - pip3 install --user crc32c pylint build twine
   - export PATH="${PATH}:${HOME}/.local/bin"
 
 pylint:
@@ -12,8 +12,8 @@ pylint:
 
 package:
   script:
-    - dnf install -y fedora-packager pyp2rpm createrepo python3-devel python3-build twine
-    - make package
+    - dnf install -y fedora-packager pyp2rpm createrepo
+    - make dist rpms
   artifacts:
     paths:
       - dist
