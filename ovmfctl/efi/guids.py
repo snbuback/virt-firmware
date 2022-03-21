@@ -48,6 +48,7 @@ name_table = {
     "4c19049f-4137-4dd3-9c10-8b97a83ffdfa" : "EfiMemoryTypeInformation",
     "4b47d616-a8d6-4552-9d44-ccad2e0f4cf9" : "IScsiConfig",
     "d9bee56e-75dc-49d9-b4d7-b534210f637a" : "EfiCertDb",
+    "fd2340d0-3dab-4349-a6c7-3b4f12b48eae" : "EfiTlsCaCertificate",
 
     # protocols (also used for variables)
     "59324945-ec44-4c0d-b1cd-9db139df070c" : "EfiIScsiInitiatorNameProtocol",
