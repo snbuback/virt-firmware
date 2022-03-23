@@ -42,6 +42,4 @@ if __name__ == "__main__":
                         level = logging.DEBUG)
 
     vl = LinuxVarStore.get_varlist()
-    print('variable list:')
-    for (n, v) in vl.items():
-        print(f' - {n}')
+    vl.print_normal()
