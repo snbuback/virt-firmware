@@ -8,6 +8,7 @@ import optparse
 from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 from ovmfctl.efi import edk2
+from ovmfctl.efi import linux
 
 
 ##################################################################################################
@@ -20,6 +21,9 @@ def main():
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
+    parser.add_option('--input-linux', dest = 'input_linux',
+                      action = 'store_true', default = False,
+                      help = 'read edk2 vars from linux efivar fs')
     parser.add_option('--extract-certs', dest = 'extract',
                       action = 'store_true', default = False,
                       help = 'extract all certificates')
@@ -86,12 +90,14 @@ def main():
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    if options.input:
+    edk2store = None
+    varlist = efivar.EfiVarList()
+
+    if options.input_linux:
+        varlist = linux.LinuxVarStore.get_varlist()
+    elif options.input:
         edk2store = edk2.Edk2VarStore(options.input)
         varlist = edk2store.get_varlist()
-    else:
-        edk2store = None
-        varlist = efivar.EfiVarList()
 
     if options.extract:
         for (key, item) in varlist.items():

@@ -36,10 +36,3 @@ class LinuxVarStore:
                                         attr = attr, data = data)
                     varlist[name] = var
         return varlist
-
-if __name__ == "__main__":
-    logging.basicConfig(format = '%(levelname)s: %(message)s',
-                        level = logging.DEBUG)
-
-    vl = LinuxVarStore.get_varlist()
-    vl.print_normal()
