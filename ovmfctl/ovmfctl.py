@@ -79,7 +79,7 @@ def main():
                       help = 'print variable hexdumps')
     parser.add_option('-o', '--output', dest = 'output', type = 'string',
                       help = 'write edk2 vars to FILE', metavar = 'FILE')
-    parser.add_option('--write-json', dest = 'write_json', type = 'string',
+    parser.add_option('--output-json', dest = 'output_json', type = 'string',
                       help = 'write json dump to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
 
@@ -160,10 +160,10 @@ def main():
             sys.exit(1)
         edk2store.write_varstore(options.output, varlist)
 
-    if options.write_json:
+    if options.output_json:
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
-        logging.info('writing json varstore to %s', options.write_json)
-        with open(options.write_json, "w", encoding = 'utf-8') as f:
+        logging.info('writing json varstore to %s', options.output_json)
+        with open(options.output_json, "w", encoding = 'utf-8') as f:
             f.write(j)
 
     return 0
