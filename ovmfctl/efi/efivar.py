@@ -341,7 +341,7 @@ class EfiVarList(collections.UserDict):
             print(f'  {pos:06x}:  [ ... ]')
 
     def print_normal(self, hexdump = False):
-        for (key, var) in self.items():
+        for (key, var) in sorted(self.items()):
             name = str(var.name)
             gname = guids.name(var.guid)
             size = len(var.data)
@@ -364,7 +364,7 @@ class EfiVarList(collections.UserDict):
             print('')
 
     def print_compact(self):
-        for (key, var) in self.items():
+        for (key, var) in sorted(self.items()):
             name = str(var.name)
             desc = var.fmt_data()
             if not desc:
