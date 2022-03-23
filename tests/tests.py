@@ -13,6 +13,10 @@ VARS_SECBOOT = "/usr/share/OVMF/OVMF_VARS.secboot.fd"
 class TestsEdk2(unittest.TestCase):
 
     @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
+    def test_probe(self):
+        self.assertTrue(edk2.Edk2VarStore.probe(VARS_EMPTY))
+
+    @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
     def test_enroll(self):
         store = edk2.Edk2VarStore(VARS_EMPTY)
         varlist = store.get_varlist()

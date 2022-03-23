@@ -20,6 +20,15 @@ class Edk2VarStore:
         self.readfile()
         self.parse_volume()
 
+    @staticmethod
+    def probe(filename):
+        with open(filename, "rb") as f:
+            header = f.read(64)
+        guid = guids.parse_bin(header, 16)
+        if str(guid) != guids.NvData:
+            return False
+        return True
+
     def readfile(self):
         logging.info('reading edk2 varstore from %s', self.filename)
         with open(self.filename, "rb") as f:
