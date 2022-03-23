@@ -5,76 +5,9 @@ import json
 import logging
 import optparse
 
-from cryptography import x509
-
-from ovmfctl.efi import guids
 from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 from ovmfctl.efi import edk2
-
-
-##################################################################################################
-# print stuff, debug logging
-
-def print_hexdump(data, start, end):
-    hstr = ''
-    astr = ''
-    pos = start
-    count = 0
-    while True:
-        hstr += f'{data[start+count]:02x} '
-        if (data[start+count] > 0x20 and
-            data[start+count] < 0x7f):
-            astr += f'{data[start+count]:c}'
-        else:
-            astr += '.'
-        count += 1
-        if count % 4 == 0:
-            hstr += ' '
-            astr += ' '
-        if count % 16 == 0 or start+count == end:
-            print(f'    {pos:06x}:  {hstr:52s} {astr}')
-            hstr = ''
-            astr = ''
-            pos += 16
-        if count == 256 or start+count == end:
-            break
-    if start+count < end:
-        print(f'    {pos:06x}: [ ... ]')
-
-def print_sigdb(var):
-    for item in var.sigdb:
-        name = guids.name(item.guid)
-        count = len(item)
-        print(f'    list type={name} count={count}')
-        if item.x509:
-            cn = item.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-            print(f'      x509 CN={cn.value}')
-        elif str(item.guid) == guids.EfiCertSha256:
-            for sig in list(item):
-                print(f"      sha256 {sig['data'].hex()}")
-
-def print_var(var, verbose, hexdump):
-    name = str(var.name)
-    gname = guids.name(var.guid)
-    size = len(var.data)
-    print(f'  - name={name} guid={gname} size={size}')
-    desc = var.fmt_data()
-    if desc:
-        print(f'    {desc}')
-    if var.sigdb:
-        print_sigdb(var)
-    if verbose:
-        print("----- raw -----")
-        print(json.dumps(var, cls=efijson.EfiJSONEncoder, indent = 4))
-        print("----- end -----")
-    if hexdump:
-        print_hexdump(var.data, 0, len(var.data))
-
-def print_vars(varlist, verbose, hexdump):
-    logging.info("printing variables ...")
-    for (key, item) in varlist.items():
-        print_var(item, verbose, hexdump)
 
 
 ##################################################################################################
@@ -216,7 +149,10 @@ def main():
         varlist.enable_secureboot()
 
     if options.print:
-        print_vars(varlist, options.verbose, options.hexdump)
+        if options.verbose:
+            varlist.print_normal(options.hexdump)
+        else:
+            varlist.print_compact()
 
     if options.output:
         if edk2store is None:

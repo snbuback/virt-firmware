@@ -6,6 +6,8 @@ import logging
 import datetime
 import collections
 
+from cryptography import x509
+
 from ovmfctl.efi import guids
 from ovmfctl.efi import ucs16
 from ovmfctl.efi import devpath
@@ -183,7 +185,7 @@ class EfiVar:
 
     def fmt_ascii(self):
         string = self.data.decode().rstrip('\0')
-        return f'ascii: {string}'
+        return f'ascii: "{string}"'
 
     def fmt_boot_entry(self):
         (attr, pathsize) = struct.unpack_from('=LH', self.data)
@@ -191,7 +193,7 @@ class EfiVar:
         path = self.data[ name.size() + 6 :
                           name.size() + 6 + pathsize ]
         obj = devpath.DevicePath(path)
-        return f'boot entry: name={name} devpath={obj}'
+        return f'boot entry: name="{name}" devpath={obj}'
 
     def fmt_boot_list(self):
         bootlist = []
@@ -203,7 +205,7 @@ class EfiVar:
 
     def fmt_dev_path(self):
         obj = devpath.DevicePath(self.data)
-        return f'device path: {obj}'
+        return f'devpath: {obj}'
 
     # pylint: disable=too-many-return-statements
     def fmt_data(self):
@@ -296,3 +298,75 @@ class EfiVarList(collections.UserDict):
         self.add_cert('KEK', guids.MicrosoftVendor, certs.MS_KEK, False)
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_WIN, False)
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_3RD, False)
+
+    @staticmethod
+    def print_siglist(slist):
+        name = guids.name(slist.guid)
+        count = len(slist)
+        print(f'  siglist type={name} count={count}')
+        if slist.x509:
+            scn = slist.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+            icn = slist.x509.issuer.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+            print(f'    subject CN={scn.value}')
+            print(f'    issuer CN={icn.value}')
+        elif str(slist.guid) == guids.EfiCertSha256:
+            for sig in list(slist):
+                print(f"    {sig['data'].hex()}")
+
+    @staticmethod
+    def print_hexdump(data):
+        hstr = ''
+        astr = ''
+        pos = 0
+        count = 0
+        while count < len(data) and count < 256:
+            hstr += f'{data[count]:02x} '
+            if (data[count] > 0x20 and data[count] < 0x7f):
+                astr += f'{data[count]:c}'
+            else:
+                astr += '.'
+            count += 1
+
+            if count % 4 == 0:
+                hstr += ' '
+                astr += ' '
+
+            if count % 16 == 0 or count == len(data):
+                print(f'  {pos:06x}:  {hstr:52s} {astr}')
+                hstr = ''
+                astr = ''
+                pos += 16
+
+        if count < len(data):
+            print(f'  {pos:06x}:  [ ... ]')
+
+    def print_normal(self, hexdump = False):
+        for (key, var) in self.items():
+            name = str(var.name)
+            gname = guids.name(var.guid)
+            size = len(var.data)
+            line = f'name={name} guid={gname} size={size}'
+            if var.count:
+                line += f' count={var.count}'
+            if var.pkidx:
+                line += f' pkidx={var.pkidx}'
+            if var.time:
+                line += f' time={var.time}'
+            print(line)
+            line = var.fmt_data()
+            if line:
+                print('  ' + line)
+            if var.sigdb:
+                for slist in var.sigdb:
+                    self.print_siglist(slist)
+            if hexdump:
+                self.print_hexdump(var.data)
+            print('')
+
+    def print_compact(self):
+        for (key, var) in self.items():
+            name = str(var.name)
+            desc = var.fmt_data()
+            if not desc:
+                desc = f'blob: {len(var.data)} bytes'
+            print(f'{name:20s}: {desc}')
