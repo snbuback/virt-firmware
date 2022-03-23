@@ -3,6 +3,7 @@ import json
 import unittest
 
 from ovmfctl.efi import edk2
+from ovmfctl.efi import linux
 from ovmfctl.efi import efivar
 from ovmfctl.efi import efijson
 
@@ -30,6 +31,10 @@ class TestsEdk2(unittest.TestCase):
     def test_add_hash(self):
         varlist = efivar.EfiVarList()
         varlist.add_hash('db', 'shim', '70183c6c50978ee60f61d8a60580d5e0022114f20f3b99715617054e916770a4')
+
+    @unittest.skipUnless(os.path.exists('/sys/firmware/efi/efivars'), 'no efivars fs')
+    def test_parse_linux(self):
+        varlist = linux.LinuxVarStore.get_varlist()
 
 if __name__ == '__main__':
     unittest.main()
