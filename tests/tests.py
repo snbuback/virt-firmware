@@ -2,10 +2,11 @@ import os
 import json
 import unittest
 
-from ovmfctl.efi import edk2
-from ovmfctl.efi import linux
-from ovmfctl.efi import efivar
-from ovmfctl.efi import efijson
+from virt.firmware.efi import efivar
+from virt.firmware.efi import efijson
+
+from virt.firmware import edk2
+from virt.firmware import linux
 
 VARS_EMPTY   = "/usr/share/OVMF/OVMF_VARS.fd"
 VARS_SECBOOT = "/usr/share/OVMF/OVMF_VARS.secboot.fd"

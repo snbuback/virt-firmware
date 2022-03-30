@@ -8,8 +8,8 @@ EFI_DEVICE_PATH_PROTOCOL (Protocol/DevicePath.h)
 import struct
 import collections
 
-from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
+from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
 
 class DevicePathElem:
     """ class reprsenting an efi device path element """

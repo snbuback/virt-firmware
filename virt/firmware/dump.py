@@ -5,8 +5,8 @@ import lzma
 import struct
 import optparse
 
-from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
+from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
 
 def parse_sev_type(typeid):
     id2name = {

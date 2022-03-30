@@ -10,7 +10,7 @@ import collections
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
-from ovmfctl.efi import guids
+from virt.firmware.efi import guids
 
 class EfiSigList(collections.UserList):
     """  efi signature list """

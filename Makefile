@@ -8,7 +8,7 @@ PYLINT_OPTS	+= -d deprecated-module			# TODO
 PYLINT_OPTS	+= -d missing-function-docstring	# TODO
 
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
-PKG_TARBALL	:= dist/ovmfctl-$(PKG_VERSION).tar.gz
+PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
 FW_IMAGE	:= $(wildcard /usr/share/edk2/ovmf/*.fd)
 FW_IMAGE	+= $(wildcard /usr/share/edk2/aarch64/*.fd)
@@ -17,7 +17,7 @@ default:
 	@echo "targets: lint install uninstall clean"
 
 lint pylint:
-	pylint $(PYLINT_OPTS) ovmfctl/
+	pylint $(PYLINT_OPTS) virt/firmware
 
 .PHONY: dist
 dist tarball $(PKG_TARBALL):
@@ -39,27 +39,27 @@ install:
 	python3 -m pip install --user .
 
 uninstall:
-	python3 -m pip uninstall ovmfctl
+	python3 -m pip uninstall virt-firmware
 
-test: test-ovmfdump test-ovmfctl test-unittest
+test: test-dump test-vars test-unittest
 
-test-ovmfdump:
-	ovmfdump --help
-	for i in $(FW_IMAGE); do ovmfdump -i $$i || exit 1; done
+test-dump:
+	virt-fw-dump --help
+	for i in $(FW_IMAGE); do virt-fw-dump -i $$i || exit 1; done
 
-test-ovmfctl:
-	ovmfctl --help
-	ovmfctl -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
-	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars-1.fd --output-json vars.json --enroll-redhat --secure-boot
-	ovmfctl -i /usr/share/OVMF/OVMF_VARS.fd -o vars-2.fd --set-json vars.json
+test-vars:
+	virt-fw-vars --help
+	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
+	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.fd -o vars-1.fd --output-json vars.json --enroll-redhat --secure-boot
+	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.fd -o vars-2.fd --set-json vars.json
 	diff vars-1.fd vars-2.fd
-	ovmfctl -i vars-1.fd --print --verbose
+	virt-fw-vars -i vars-1.fd --print --verbose
 	rm -f vars-1.fd vars-2.fd vars.json *.pem
 
 test-unittest:
 	python3 tests/tests.py
 
 clean:
-	rm -rf build ovmfctl.egg-info $(PKG_TARBALL) rpms dist
-	rm -rf *~ ovmfctl/*~ ovmfctl/efi/*~
-	rm -rf *~ ovmfctl/__pycache__  ovmfctl/efi/__pycache__
+	rm -rf build virt-firmware.egg-info $(PKG_TARBALL) rpms dist
+	rm -rf *~ virt/firmware/*~ virt/firmware/efi/*~
+	rm -rf *~ virt/firmware/__pycache__ virt/firmware/efi/__pycache__

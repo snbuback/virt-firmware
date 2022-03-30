@@ -4,9 +4,9 @@ import sys
 import struct
 import logging
 
-from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
-from ovmfctl.efi import efivar
+from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
+from virt.firmware.efi import efivar
 
 class Edk2VarStore:
     """  class for edk2 efi varstore """

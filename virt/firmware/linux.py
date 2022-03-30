@@ -3,9 +3,9 @@
 import os
 import logging
 
-from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
-from ovmfctl.efi import efivar
+from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
+from virt.firmware.efi import efivar
 
 # pylint: disable=too-few-public-methods
 class LinuxVarStore:

@@ -21,8 +21,8 @@ package:
 
 .testscript: &testscript
   - make install
-  - make test-ovmfctl
-  - make test-ovmfdump
+  - make test-dump
+  - make test-vars
   - make test-unittest
 
 test-fedora:

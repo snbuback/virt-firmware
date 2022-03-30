@@ -8,11 +8,11 @@ import collections
 
 from cryptography import x509
 
-from ovmfctl.efi import guids
-from ovmfctl.efi import ucs16
-from ovmfctl.efi import devpath
-from ovmfctl.efi import siglist
-from ovmfctl.efi import certs
+from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
+from virt.firmware.efi import devpath
+from virt.firmware.efi import siglist
+from virt.firmware.efi import certs
 
 ##################################################################################################
 # constants

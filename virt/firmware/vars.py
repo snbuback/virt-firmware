@@ -5,10 +5,11 @@ import json
 import logging
 import optparse
 
-from ovmfctl.efi import efivar
-from ovmfctl.efi import efijson
-from ovmfctl.efi import edk2
-from ovmfctl.efi import linux
+from virt.firmware.efi import efivar
+from virt.firmware.efi import efijson
+
+from virt.firmware import edk2
+from virt.firmware import linux
 
 
 ##################################################################################################
