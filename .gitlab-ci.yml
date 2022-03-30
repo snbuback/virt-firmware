@@ -8,6 +8,7 @@ before_script:
 
 pylint:
   script:
+    - make install
     - make pylint
 
 package:
