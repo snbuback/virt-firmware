@@ -60,6 +60,6 @@ test-unittest:
 	python3 tests/tests.py
 
 clean:
-	rm -rf build virt-firmware.egg-info $(PKG_TARBALL) rpms dist
+	rm -rf build virt_firmware.egg-info $(PKG_TARBALL) rpms dist
 	rm -rf *~ virt/firmware/*~ virt/firmware/efi/*~
 	rm -rf *~ virt/firmware/__pycache__ virt/firmware/efi/__pycache__
