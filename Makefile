@@ -41,7 +41,7 @@ install:
 uninstall:
 	python3 -m pip uninstall virt-firmware
 
-test: test-dump test-vars test-unittest
+test check: test-dump test-vars test-unittest
 
 test-dump:
 	virt-fw-dump --help
