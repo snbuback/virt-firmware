@@ -1,12 +1,8 @@
 #!/usr/bin/python
-""" print and edit ovmf varstore files """
+""" print efi variables """
 import sys
-import json
 import logging
 import optparse
-
-from virt.firmware.efi import efivar
-from virt.firmware.efi import efijson
 
 from virt.firmware import linux
 
@@ -24,12 +20,15 @@ def main():
     parser.add_option('-x', '--hexdump', dest = 'hexdump',
                       action = 'store_true', default = False,
                       help = 'print variable hexdumps')
+    parser.add_option('--volatile', dest = 'volatile',
+                      action = 'store_true', default = False,
+                      help = 'include volatile variables')
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    varlist = linux.LinuxVarStore.get_varlist()
+    varlist = linux.LinuxVarStore.get_varlist(volatile = options.volatile)
     if options.verbose:
         varlist.print_normal(options.hexdump)
     else:
