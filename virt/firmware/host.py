@@ -22,7 +22,7 @@ def main():
                       help = 'print variable hexdumps')
     parser.add_option('--volatile', dest = 'volatile',
                       action = 'store_true', default = False,
-                      help = 'include volatile variables')
+                      help = 'print volatile variables too')
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
