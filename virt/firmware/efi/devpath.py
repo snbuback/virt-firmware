@@ -21,7 +21,7 @@ class DevicePathElem:
     def hw(self):
         if self.subtype == 0x01:
             (func, dev) = struct.unpack_from('=BB', self.data)
-            return f'PCI(device={dev:02x}:{func:x})'
+            return f'PCI(dev={dev:02x}:{func:x})'
         if self.subtype == 0x04:
             guid = guids.parse_bin(self.data, 0)
             return f'VendorHW({guid})'
@@ -30,7 +30,12 @@ class DevicePathElem:
     def acpi(self):
         if self.subtype == 0x01:
             (hid, uid) = struct.unpack_from('=LL', self.data)
+            if hid == 0xa0341d0:
+                return 'PciRoot()'
             return f'ACPI(hid=0x{hid:x},uid=0x{uid:x})'
+        if self.subtype == 0x03:
+            adr = struct.unpack_from('=LL', self.data)
+            return f'GOP(adr=0x{adr[0]:x})'
         return f'ACPI(subtype=0x{self.subtype:x})'
 
     # pylint: disable=too-many-return-statements
@@ -38,6 +43,9 @@ class DevicePathElem:
         if self.subtype == 0x02:
             (pun, lun) = struct.unpack_from('=HH', self.data)
             return f'SCSI(pun={pun},lun={lun})'
+        if self.subtype == 0x05:
+            (port, intf) = struct.unpack_from('=BB', self.data)
+            return f'USB(port={port})'
         if self.subtype == 0x0b:
             return 'MAC()'
         if self.subtype == 0x0c:
