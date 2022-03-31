@@ -289,10 +289,14 @@ class EfiVarList(collections.UserDict):
         self.set_bool('SecureBootEnable', True)
         self.set_bool('CustomMode', False)
 
-    def enroll_platform_redhat(self):
-        self.add_cert('PK', guids.OvmfEnrollDefaultKeys, certs.REDHAT_PK, True)
-        self.add_cert('KEK', guids.OvmfEnrollDefaultKeys, certs.REDHAT_PK, True)
+    def enroll_platform_with_cert(self, cert,
+                                  guid = guids.OvmfEnrollDefaultKeys):
+        self.add_cert('PK', guid, cert, True)
+        self.add_cert('KEK', guid, cert, True)
         self.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
+
+    def enroll_platform_redhat(self):
+        self.enroll_platform_with_cert(certs.REDHAT_PK)
 
     def add_microsoft_keys(self):
         self.add_cert('KEK', guids.MicrosoftVendor, certs.MS_KEK, False)
