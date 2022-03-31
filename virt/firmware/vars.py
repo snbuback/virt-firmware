@@ -22,9 +22,6 @@ def main():
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
-    parser.add_option('--input-linux', dest = 'input_linux',
-                      action = 'store_true', default = False,
-                      help = 'read edk2 vars from linux efivar fs')
     parser.add_option('--extract-certs', dest = 'extract',
                       action = 'store_true', default = False,
                       help = 'extract all certificates')
@@ -94,9 +91,7 @@ def main():
     edk2store = None
     varlist = efivar.EfiVarList()
 
-    if options.input_linux:
-        varlist = linux.LinuxVarStore.get_varlist()
-    elif options.input:
+    if options.input:
         edk2store = edk2.Edk2VarStore(options.input)
         varlist = edk2store.get_varlist()
 
