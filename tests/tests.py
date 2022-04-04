@@ -5,8 +5,8 @@ import unittest
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
 
-from virt.firmware import edk2
-from virt.firmware import linux
+from virt.firmware.varstore import edk2
+from virt.firmware.varstore import linux
 
 VARS_EMPTY   = "/usr/share/OVMF/OVMF_VARS.fd"
 VARS_SECBOOT = "/usr/share/OVMF/OVMF_VARS.secboot.fd"

@@ -8,7 +8,7 @@ import optparse
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
 
-from virt.firmware import edk2
+from virt.firmware.varstore import edk2
 
 
 ##################################################################################################

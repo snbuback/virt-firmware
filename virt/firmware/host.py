@@ -4,7 +4,7 @@ import sys
 import logging
 import optparse
 
-from virt.firmware import linux
+from virt.firmware.varstore import linux
 
 
 ##################################################################################################
