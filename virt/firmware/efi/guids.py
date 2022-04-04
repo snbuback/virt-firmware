@@ -22,6 +22,9 @@ OvmfEnrollDefaultKeys        = "a0baa8a3-041d-48a8-bc87-c36d121b5e3d"
 Shim                         = "605dab50-e046-4300-abb6-3dd810dd8b23"
 
 OvmfGuidList                 = "96b582de-1fb2-45f7-baea-a366c55a082d"
+SevHashTableBlock            = "7255371f-3a3b-4b04-927b-1da6efa8d454"
+SevSecretBlock               = "4c2eb361-7d9b-4cc3-8081-127c90d3d294"
+SevProcessorReset            = "00f771de-1a7e-4fcb-890e-68c77e2fb44e"
 OvmfSevMetadataOffset        = "dc886566-984a-4798-a75e-5585a7bf67cc"
 TdxMetadataOffset            = "e47a6535-984a-4798-865e-4685a7bf8ec2"
 
@@ -68,10 +71,9 @@ name_table = {
     OvmfGuidList                           : "OvmfGuidList",
     OvmfSevMetadataOffset                  : "OvmfSevMetadataOffset",
     TdxMetadataOffset                      : "TdxMetadataOffset",
-
-    "7255371f-3a3b-4b04-927b-1da6efa8d454" : "SevHashTableBlock",
-    "4c2eb361-7d9b-4cc3-8081-127c90d3d294" : "SevSecretBlock",
-    "00f771de-1a7e-4fcb-890e-68c77e2fb44e" : "SevProcessorReset",
+    SevHashTableBlock                      : "SevHashTableBlock",
+    SevSecretBlock                         : "SevSecretBlock",
+    SevProcessorReset                      : "SevProcessorReset",
 
     # misc
     "00000000-0000-0000-0000-000000000000" : "Zero",
