@@ -46,7 +46,7 @@ test check: test-dump test-vars test-unittest
 
 test-dump:
 	virt-fw-dump --help
-	for i in $(FW_IMAGE); do virt-fw-dump -i $$i || exit 1; done
+	for i in $(FW_IMAGE); do echo "# $$i"; virt-fw-dump -i $$i || exit 1; done
 
 test-vars:
 	virt-fw-vars --help
