@@ -488,7 +488,8 @@ def print_all(item, indent):
     if indent == 0:
         # workaround for old python
         print(f'{item}')
-    print(f'{"":{indent}s}{item}')
+    else:
+        print(f'{"":{indent}s}{item}')
     return 2
 
 def print_volumes(item, indent):
