@@ -30,13 +30,13 @@ class Edk2CommonBase(collections.UserList):
     def parse_sections(self, data):
         self.used = 0
         while self.used < len(data):
-            self.align(4)
             try:
                 section = Edk2FileSection(data = data [ self.used : ] )
             except ValueError as err:
                 self.append(f'{err}')
                 return
             self.used += section.size()
+            self.align(4)
             self.append(section)
             if section.typeid == 0x15:
                 self.secname = section
@@ -386,13 +386,13 @@ class Edk2NvData(Edk2CommonBase):
     def parse_varlist(self, data):
         self.used = 0
         while self.used < len(data):
-            self.align(4)
             try:
                 var = Edk2Variable(data [ self.used : ])
             except (ValueError, struct.error) as err:
                 self.append(f'{err}')
                 return
             self.used += var.size()
+            self.align(4)
             self.append(var)
 
     def __str__(self):
@@ -431,13 +431,13 @@ class Edk2Volume(Edk2CommonBase):
     def parse_ffs(self, data):
         self.used = 0
         while self.used < len(data):
-            self.align(8)
             try:
                 item = Edk2FfsFile(data = data [ self.used : ] )
             except (ValueError, struct.error) as err:
                 self.append(f'{err}')
                 return
             self.used += item.size()
+            self.align(8)
             self.append(item)
 
     def is_ffs(self):
