@@ -35,6 +35,11 @@ test-centos8:
   script:
     - *testscript
 
+test-centos9:
+  image: quay.io/centos/centos:stream9
+  script:
+    - *testscript
+
 pages:
   stage: deploy
   dependencies:
