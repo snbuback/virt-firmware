@@ -455,6 +455,31 @@ class Edk2Volume(Edk2CommonBase):
                 f'used={self.used * 100 / self.tlen:.1f}%')
 
 
+class Edk2Capsule:
+    """ efi signed capsule """
+
+    def __init__(self, data = None):
+        super().__init__()
+        self.guid  = None
+        self.hlen  = 0
+        self.flags = 0
+        self.clen  = 0
+        if data:
+            self.parse(data)
+
+    def parse(self, data):
+        (guid, self.hlen, self.flags, self.clen) = \
+            struct.unpack_from('<16sLLL', data)
+        self.guid = guids.parse_bin(guid, 0)
+
+    def size(self):
+        return self.hlen
+
+    def __str__(self):
+        return(f'capsule={guids.name(self.guid)} hlen=0x{self.hlen:x} '
+               f'flags=0x{self.flags:x} clen=0x{self.clen:x}')
+
+
 class Edk2Image(collections.UserList):
     """ edk2 firmware image """
 
@@ -469,13 +494,22 @@ class Edk2Image(collections.UserList):
         step = 1024
         while pos + 32 < len(data):
             (tlen, sig) = struct.unpack_from('<QL', data, pos + 32)
-            if sig != 0x4856465f:
-                pos = (pos + step) & ~(step-1)
+            if sig == 0x4856465f:
+                vol = Edk2Volume(data = data [ pos : ],
+                                 offset = pos)
+                pos += vol.size()
+                self.append(vol)
                 continue
-            vol = Edk2Volume(data = data [ pos : ],
-                             offset = pos)
-            pos += vol.size()
-            self.append(vol)
+
+            guid = guids.parse_bin(data, pos)
+            if str(guid) == guids.SignedCapsule:
+                upd = Edk2Capsule(data [ pos : ] )
+                pos += upd.size()
+                self.append(upd)
+                continue
+
+            pos = (pos + step) & ~(step-1)
+            continue
 
     def __str__(self):
         return f'image={self.name}'
