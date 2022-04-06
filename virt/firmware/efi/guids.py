@@ -28,6 +28,9 @@ SevProcessorReset            = "00f771de-1a7e-4fcb-890e-68c77e2fb44e"
 OvmfSevMetadataOffset        = "dc886566-984a-4798-a75e-5585a7bf67cc"
 TdxMetadataOffset            = "e47a6535-984a-4798-865e-4685a7bf8ec2"
 
+FwMgrCapsule                 = "6dcbd5ed-e82d-4c44-bda1-7194199ad92a"
+SignedCapsule                = "4a3ca68b-7723-48fb-803d-578cc1fec44d"
+
 NotValid                     = "ffffffff-ffff-ffff-ffff-ffffffffffff"
 
 name_table = {
@@ -74,6 +77,10 @@ name_table = {
     SevHashTableBlock                      : "SevHashTableBlock",
     SevSecretBlock                         : "SevSecretBlock",
     SevProcessorReset                      : "SevProcessorReset",
+
+    # capsule
+    FwMgrCapsule                           : "FwMgrCapsule",
+    SignedCapsule                          : "SignedCapsule",
 
     # misc
     "00000000-0000-0000-0000-000000000000" : "Zero",
