@@ -389,7 +389,7 @@ class Edk2NvData(Edk2CommonBase):
             self.align(4)
             try:
                 var = Edk2Variable(data [ self.used : ])
-            except ValueError as err:
+            except (ValueError, struct.error) as err:
                 self.append(f'{err}')
                 return
             self.used += var.size()
@@ -434,7 +434,7 @@ class Edk2Volume(Edk2CommonBase):
             self.align(8)
             try:
                 item = Edk2FfsFile(data = data [ self.used : ] )
-            except ValueError as err:
+            except (ValueError, struct.error) as err:
                 self.append(f'{err}')
                 return
             self.used += item.size()
