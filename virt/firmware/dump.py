@@ -219,7 +219,7 @@ class Edk2FileSection(Edk2CommonBase):
                 self.parse_sections(unxz)
 
         elif self.typeid == 0x17:
-            vol = Edk2Volume(data [ self.hlen : ])
+            vol = Edk2Volume(data = data [ self.hlen : ])
             self.append(vol)
 
         else:
@@ -404,7 +404,7 @@ class Edk2NvData(Edk2CommonBase):
 class Edk2Volume(Edk2CommonBase):
     """ edk2 firmware volume """
 
-    def __init__(self, data = None):
+    def __init__(self, data = None, offset = 0):
         super().__init__()
         self.guid   = None
         self.attr   = 0
@@ -412,6 +412,7 @@ class Edk2Volume(Edk2CommonBase):
         self.rev    = 0
         self.blocks = 0
         self.bsize  = 0
+        self.offset = offset
         if data:
             self.parse(data)
 
@@ -448,7 +449,8 @@ class Edk2Volume(Edk2CommonBase):
 
     def __str__(self):
         return (f'volume={guids.name(self.guid)} '
-                f'size=0x{self.tlen:x} hlen=0x{self.hlen:x} xoff=0x{self.xoff:x} '
+                f'offset=0x{self.offset:x} size=0x{self.tlen:x} '
+                f'hlen=0x{self.hlen:x} xoff=0x{self.xoff:x} '
                 f'rev={self.rev} blocks={self.blocks}*{self.bsize} '
                 f'used={self.used * 100 / self.tlen:.1f}%')
 
@@ -464,12 +466,14 @@ class Edk2Image(collections.UserList):
 
     def parse(self, data):
         pos = 0
-        (tlen, sig) = struct.unpack_from('<QL', data, pos + 32)
-        if sig != 0x4856465f:
-            pos += 0x1000  # arm/aa64 code image
-
-        while pos < len(data):
-            vol = Edk2Volume(data = data [ pos : ] )
+        step = 1024
+        while pos + 32 < len(data):
+            (tlen, sig) = struct.unpack_from('<QL', data, pos + 32)
+            if sig != 0x4856465f:
+                pos = (pos + step) & ~(step-1)
+                continue
+            vol = Edk2Volume(data = data [ pos : ],
+                             offset = pos)
             pos += vol.size()
             self.append(vol)
 
@@ -481,19 +485,20 @@ class Edk2Image(collections.UserList):
 # print stuff
 
 def print_all(item, indent):
+    if indent == 0:
+        # workaround for old python
+        print(f'{item}')
     print(f'{"":{indent}s}{item}')
     return 2
 
 def print_volumes(item, indent):
     if isinstance(item, (Edk2Image, Edk2Volume)):
-        print(f'{"":{indent}s}{item}')
-        return 2
+        return print_all(item, indent)
     return 0
 
 def print_modules(item, indent):
     if isinstance(item, (Edk2Image, Edk2Volume)):
-        print(f'{"":{indent}s}{item}')
-        return 2
+        return print_all(item, indent)
     if isinstance(item, Edk2FfsFile) and item.secname is not None:
         name = ucs16.from_ucs16(item.secname.blob, 0)
         print(f'{"":{indent}s}ffsfile size=0x{item.tlen:x} type={item.fmt_type()} name={name}')
@@ -502,11 +507,10 @@ def print_modules(item, indent):
 
 def print_ovmf_meta(item, indent):
     if isinstance(item, (Edk2Image, OvmfResetVector, OvmfGuidListEntry, OvmfMemoryRange)):
-        print(f'{"":{indent}s}{item}')
-        return 2
+        return print_all(item, indent)
     return 0
 
-def print_tree(item, pfunc, indent = 2):
+def print_tree(item, pfunc, indent = 0):
     inc = pfunc(item, indent)
     if isinstance(item, collections.UserList):
         for i in list(item):
