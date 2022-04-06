@@ -29,7 +29,7 @@ class Edk2CommonBase(collections.UserList):
 
     def parse_sections(self, data):
         self.used = 0
-        while self.used < len(data):
+        while self.used + 8 < len(data):
             try:
                 section = Edk2FileSection(data = data [ self.used : ] )
             except ValueError as err:
@@ -385,7 +385,7 @@ class Edk2NvData(Edk2CommonBase):
 
     def parse_varlist(self, data):
         self.used = 0
-        while self.used < len(data):
+        while self.used + 60 < len(data):
             try:
                 var = Edk2Variable(data [ self.used : ])
             except (ValueError, struct.error) as err:
@@ -430,7 +430,7 @@ class Edk2Volume(Edk2CommonBase):
 
     def parse_ffs(self, data):
         self.used = 0
-        while self.used < len(data):
+        while self.used + 28 < len(data):
             try:
                 item = Edk2FfsFile(data = data [ self.used : ] )
             except (ValueError, struct.error) as err:
@@ -506,7 +506,7 @@ def print_ovmf_meta(item, indent):
         return 2
     return 0
 
-def print_tree(item, pfunc, indent = 0):
+def print_tree(item, pfunc, indent = 2):
     inc = pfunc(item, indent)
     if isinstance(item, collections.UserList):
         for i in list(item):
