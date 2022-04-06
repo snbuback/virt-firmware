@@ -455,7 +455,7 @@ class Edk2Volume(Edk2CommonBase):
                 f'used={self.used * 100 / self.tlen:.1f}%')
 
 
-class Edk2Capsule:
+class Edk2Capsule(Edk2CommonBase):
     """ efi signed capsule """
 
     def __init__(self, data = None):
@@ -467,13 +467,20 @@ class Edk2Capsule:
         if data:
             self.parse(data)
 
+    def hex(self, data, start, end):
+        while start < end:
+            line = f'{start:04x}: '
+            line += data [ start : start + 16 ].hex(' ')
+            self.append(line)
+            start += 16
+
     def parse(self, data):
         (guid, self.hlen, self.flags, self.clen) = \
             struct.unpack_from('<16sLLL', data)
         self.guid = guids.parse_bin(guid, 0)
-
-    def size(self):
-        return self.hlen
+        self.tlen = self.hlen # header only while we can't parse the content
+        #self.hex(data, 28, 28 + 32)
+        #self.hex(data, self.hlen, self.hlen + 64)
 
     def __str__(self):
         return(f'capsule={guids.name(self.guid)} hlen=0x{self.hlen:x} '
