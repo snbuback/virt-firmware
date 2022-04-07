@@ -183,8 +183,14 @@ class Edk2FileSection(Edk2CommonBase):
 
     type2name = {
         0x10 : "pe32",
+        0x11 : "pic",
+        0x12 : "te",
         0x13 : "dxe-depex",
+        0x14 : "version",
+        0x15 : "ui",
+        0x16 : "compat16",
         0x17 : "fw-volume",
+        0x18 : "freeform-guid",
         0x19 : "raw",
         0x1b : "pei-depex",
         0x1c : "smm-depex",
@@ -255,6 +261,7 @@ class Edk2FfsFile(Edk2CommonBase):
     """ edk2 ffs file """
 
     type2name = {
+        0x01 : 'raw',
         0x02 : 'freeform',
         0x03 : 'sec-core',
         0x04 : 'pei-core',
