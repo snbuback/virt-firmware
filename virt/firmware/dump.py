@@ -82,7 +82,7 @@ class OvmfMemoryRange:
     @staticmethod
     def sev_type(typeid):
         id2name = {
-            1 : "MEN",
+            1 : "MEM",
             2 : "Secrets",
             3 : "CPUID",
         }
