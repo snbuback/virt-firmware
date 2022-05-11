@@ -9,6 +9,7 @@ from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
 
 from virt.firmware.varstore import edk2
+from virt.firmware.varstore import aws
 
 
 ##################################################################################################
@@ -20,7 +21,7 @@ def main():
     parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_option('-i', '--input', dest = 'input', type = 'string',
-                      help = 'read edk2 vars from FILE', metavar = 'FILE')
+                      help = 'read edk2 or aws vars from FILE', metavar = 'FILE')
     parser.add_option('--extract-certs', dest = 'extract',
                       action = 'store_true', default = False,
                       help = 'extract all certificates')
@@ -79,7 +80,10 @@ def main():
                       action = 'store_true', default = False,
                       help = 'print variable hexdumps')
     parser.add_option('-o', '--output', dest = 'output', type = 'string',
-                      help = 'write edk2 vars to FILE', metavar = 'FILE')
+                      help = 'write edk2 or aws vars to FILE, using the same format '
+                      'the --input FILE has.', metavar = 'FILE')
+    parser.add_option('--output-aws', dest = 'output_aws', type = 'string',
+                      help = 'write aws vars to FILE', metavar = 'FILE')
     parser.add_option('--output-json', dest = 'output_json', type = 'string',
                       help = 'write json dump to FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
@@ -88,11 +92,16 @@ def main():
                         level = getattr(logging, options.loglevel.upper()))
 
     edk2store = None
+    awsstore = None
     varlist = efivar.EfiVarList()
 
     if options.input:
-        edk2store = edk2.Edk2VarStore(options.input)
-        varlist = edk2store.get_varlist()
+        if edk2.Edk2VarStore.probe(options.input):
+            edk2store = edk2.Edk2VarStore(options.input)
+            varlist = edk2store.get_varlist()
+        elif aws.AwsVarStore.probe(options.input):
+            awsstore = aws.AwsVarStore(options.input)
+            varlist = awsstore.get_varlist()
 
     if options.extract:
         for (key, item) in varlist.items():
@@ -156,10 +165,16 @@ def main():
             varlist.print_compact()
 
     if options.output:
-        if edk2store is None:
+        if edk2store:
+            edk2store.write_varstore(options.output, varlist)
+        elif awsstore:
+            awsstore.write_varstore(options.output, varlist)
+        else:
             logging.error("no input file specified (needed as edk2 varstore template)")
             sys.exit(1)
-        edk2store.write_varstore(options.output, varlist)
+
+    if options.output_aws:
+        aws.AwsVarStore.write_varstore(options.output_aws, varlist)
 
     if options.output_json:
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)

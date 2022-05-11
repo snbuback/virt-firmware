@@ -56,7 +56,9 @@ test-vars:
 	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.fd -o vars-2.fd --set-json vars.json
 	diff vars-1.fd vars-2.fd
 	virt-fw-vars -i vars-1.fd --print --verbose
-	rm -f vars-1.fd vars-2.fd vars.json *.pem
+	virt-fw-vars --enroll-redhat --secure-boot --output-aws vars.aws
+	virt-fw-vars -i vars.aws --print --verbose
+	rm -f vars-1.fd vars-2.fd vars.json vars.aws *.pem
 
 test-unittest:
 	python3 tests/tests.py
