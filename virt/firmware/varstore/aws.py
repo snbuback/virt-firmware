@@ -144,17 +144,20 @@ class AwsVarStore:
         return blob
 
     @staticmethod
-    def write_varstore(filename, varlist):
-        logging.info('writing aws varstore to %s', filename)
-
+    def base64_varstore(varlist):
         encoder = zlib.compressobj(9, zdict = zdict_v0())
         zblob = struct.pack("=L", 0)  # version
         zblob += encoder.compress(AwsVarStore.bytes_varlist(varlist))
         zblob += encoder.flush()
         hdr = struct.pack("=QL", AwsVarStore.MAGIC, crc32c(zblob))
+        return base64.b64encode(hdr + zblob)
+
+    @staticmethod
+    def write_varstore(filename, varlist):
+        logging.info('writing aws varstore to %s', filename)
 
         with open(filename, "wb") as f:
-            f.write(base64.b64encode(hdr + zblob))
+            f.write(AwsVarStore.base64_varstore(varlist))
 
 if __name__ == "__main__":
     logging.basicConfig(format = '%(levelname)s: %(message)s',
