@@ -122,7 +122,8 @@ class Edk2VarStore:
     def bytes_varstore(self, varlist):
         blob = self.filedata[ : self.start ]
         blob += self.bytes_varlist(varlist)
-        blob += b''.zfill(self.end - len(blob))
+        for i in range(self.end - len(blob)):
+            blob += b'\xff'
         blob += self.filedata[ self.end : ]
         return blob
 
