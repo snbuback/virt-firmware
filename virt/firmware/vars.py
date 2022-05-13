@@ -102,6 +102,9 @@ def main():
         elif aws.AwsVarStore.probe(options.input):
             awsstore = aws.AwsVarStore(options.input)
             varlist = awsstore.get_varlist()
+        else:
+            logging.error("unknown input file format")
+            sys.exit(1)
 
     if options.extract:
         for (key, item) in varlist.items():
