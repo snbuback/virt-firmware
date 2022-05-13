@@ -107,7 +107,7 @@ class EfiVar:
             if defaults:
                 self.guid = guids.parse_str(defaults['guid'])
             else:
-                raise RuntimeError("guid missing")
+                self.guid = guids.parse_str(guids.EfiGlobalVariable)
         if self.attr is None:
             if defaults:
                 self.attr = defaults['attr']
@@ -176,6 +176,13 @@ class EfiVar:
             self.data = b'\x01'
         else:
             self.data = b'\x00'
+        self.update_time()
+
+    def set_boot_entry(self, attr, title, path):
+        pathdata = bytes(path)
+        self.data = struct.pack('=LH', attr, len(pathdata))
+        self.data += bytes(title)
+        self.data += pathdata
         self.update_time()
 
     def fmt_bool(self):
