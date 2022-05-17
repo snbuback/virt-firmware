@@ -52,6 +52,13 @@ file with using the `--output-aws` option.
 Read efi variables from linux efivarfs and decode/print them.
 
 
+## using the python modules
+
+There isn't much documentation yet, sorry.  Best code reads to get
+started are probably the test cases (see `tests/tests.py`) and the
+code for the virt-fw-vars utility (see `virt/firmware/vars.py`).
+
+
 ## install
 
 Release: `pip3 install virt-firmware`
