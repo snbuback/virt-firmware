@@ -58,5 +58,12 @@ class TestsEdk2(unittest.TestCase):
     def test_parse_aws(self):
         varlist = aws.AwsVarStore(TEST_AWS)
 
+    def test_generate_aws(self):
+        varlist = efivar.EfiVarList()
+        varlist.enroll_platform_redhat()
+        varlist.add_microsoft_keys()
+        varlist.enable_secureboot()
+        uefidata = aws.AwsVarStore.base64_varstore(varlist)
+
 if __name__ == '__main__':
     unittest.main()
