@@ -4,6 +4,7 @@ import unittest
 
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
+from virt.firmware.efi import devpath
 
 from virt.firmware.varstore import edk2
 from virt.firmware.varstore import linux
@@ -50,6 +51,12 @@ class TestsEdk2(unittest.TestCase):
     def test_add_hash(self):
         varlist = efivar.EfiVarList()
         varlist.add_hash('db', 'shim', '70183c6c50978ee60f61d8a60580d5e0022114f20f3b99715617054e916770a4')
+
+    def test_add_boot_url(self):
+        path = devpath.DevicePath.uri("http://server/path/boot.iso")
+        varlist = efivar.EfiVarList()
+        varlist.set_boot_entry(0x99, 'netboot', path)
+        varlist.set_boot_next(0x99)
 
     @unittest.skipUnless(os.path.exists('/sys/firmware/efi/efivars'), 'no efivars fs')
     def test_parse_linux(self):
