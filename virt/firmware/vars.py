@@ -42,7 +42,7 @@ def main():
                       help = 'set variables from json dump FILE',
                       metavar = 'FILE')
     parser.add_option('--set-boot-uri', dest = 'set_boot_uri',
-                      help = 'set network boot uri to LINK',
+                      help = 'set network boot uri to LINK (once, using BootNext)',
                       metavar = 'LINK')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
