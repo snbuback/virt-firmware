@@ -188,13 +188,19 @@ def main():
             sys.exit(1)
 
     if options.output_aws:
-        aws.AwsVarStore.write_varstore(options.output_aws, varlist)
+        if options.output_aws == "-":
+            print(aws.AwsVarStore.base64_varstore(varlist).decode())
+        else:
+            aws.AwsVarStore.write_varstore(options.output_aws, varlist)
 
     if options.output_json:
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
-        logging.info('writing json varstore to %s', options.output_json)
-        with open(options.output_json, "w", encoding = 'utf-8') as f:
-            f.write(j)
+        if options.output_json == "-":
+            print(j)
+        else:
+            logging.info('writing json varstore to %s', options.output_json)
+            with open(options.output_json, "w", encoding = 'utf-8') as f:
+                f.write(j)
 
     return 0
 
