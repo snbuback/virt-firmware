@@ -7,6 +7,7 @@ import optparse
 
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
+from virt.firmware.efi import devpath
 
 from virt.firmware.varstore import edk2
 from virt.firmware.varstore import aws
@@ -40,6 +41,9 @@ def main():
     parser.add_option('--set-json', dest = 'set_json', type = 'string',
                       help = 'set variables from json dump FILE',
                       metavar = 'FILE')
+    parser.add_option('--set-boot-uri', dest = 'set_boot_uri',
+                      help = 'set network boot uri to LINK',
+                      metavar = 'LINK')
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
                       'from FILE and with owner GUID',
@@ -123,6 +127,13 @@ def main():
     if options.set_false:
         for item in options.set_false:
             varlist.set_bool(item, False)
+
+    if options.set_boot_uri:
+        items = options.set_boot_uri.split('/')
+        title = 'netboot ' + items[len(items)-1]
+        bpath = devpath.DevicePath.uri(options.set_boot_uri)
+        varlist.set_boot_entry(0x99, title, bpath)
+        varlist.set_boot_next(0x99)
 
     if options.set_json:
         with open(options.set_json, "r", encoding = 'utf-8') as f:
