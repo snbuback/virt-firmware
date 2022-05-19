@@ -73,6 +73,18 @@ efivar_defaults = {
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
         'guid' : guids.Shim,
     },
+    'BootNext' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                  EFI_VARIABLE_RUNTIME_ACCESS),
+        'guid' : guids.EfiGlobalVariable,
+    },
+    'Boot0099' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                  EFI_VARIABLE_RUNTIME_ACCESS),
+        'guid' : guids.EfiGlobalVariable,
+    },
 }
 
 sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "TlsCaCertificate")
@@ -185,6 +197,10 @@ class EfiVar:
         self.data += pathdata
         self.update_time()
 
+    def set_boot_next(self, index):
+        self.data = struct.pack('=H', index)
+        self.update_time()
+
     def fmt_bool(self):
         if self.data[0]:
             return 'bool: ON'
@@ -264,6 +280,23 @@ class EfiVarList(collections.UserDict):
             var = self.create(name)
         logging.info('set variable %s: %s', name, value)
         var.set_bool(value)
+
+    def set_boot_entry(self, index, title, path):
+        name = f'Boot{index:04x}'
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        t = ucs16.from_string(title)
+        logging.info('set variable %s: %s = %s', name, t, path)
+        var.set_boot_entry(1, t, path)
+
+    def set_boot_next(self, index):
+        name = 'BootNext'
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('set variable %s: 0x%04x', name, index)
+        var.set_boot_next(index)
 
     def add_cert(self, name, owner, filename, replace = False):
         var = self.get(name)
