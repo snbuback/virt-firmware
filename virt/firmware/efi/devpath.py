@@ -16,7 +16,7 @@ class DevicePathElem:
 
     def __init__(self, data = None):
         self.devtype = 0x7f
-        self.subtype = 0
+        self.subtype = 0xff
         self.data    = b''
         if data:
             (self.devtype, self.subtype, size) = struct.unpack_from('=BBH', data)
@@ -25,7 +25,7 @@ class DevicePathElem:
     def set_ipv4(self):
         self.devtype = 0x03
         self.subtype = 0x0c
-        self.data    = bytes(23)
+        self.data    = bytes(23) # use dhcp
 
     def set_uri(self, uri):
         self.devtype = 0x03
@@ -124,6 +124,14 @@ class DevicePath(collections.UserList):
                     break
                 self.append(elem)
                 pos += elem.size()
+
+    @staticmethod
+    def uri(uri):
+        path = DevicePath()
+        elem = DevicePathElem()
+        elem.set_uri(uri)
+        path.append(elem)
+        return path
 
     def __bytes__(self):
         blob = b''
