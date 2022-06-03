@@ -349,10 +349,16 @@ class EfiVarList(collections.UserDict):
         count = len(slist)
         print(f'  siglist type={name} count={count}')
         if slist.x509:
-            scn = slist.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-            icn = slist.x509.issuer.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-            print(f'    subject CN={scn.value}')
-            print(f'    issuer CN={icn.value}')
+            try:
+                scn = slist.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+                print(f'    subject CN={scn.value}')
+            except IndexError:
+                print('    no subject CN')
+            try:
+                icn = slist.x509.issuer.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+                print(f'    issuer CN={icn.value}')
+            except IndexError:
+                print('    no issuer CN')
         elif str(slist.guid) == guids.EfiCertSha256:
             for sig in list(slist):
                 print(f"    {sig['data'].hex()}")
