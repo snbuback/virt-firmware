@@ -6,11 +6,11 @@ from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
 from virt.firmware.efi import efivar
 
-# pylint: disable=no-self-use
 class EfiJSONEncoder(json.JSONEncoder):
     """  serialise efi data types as json """
 
-    def efivar(self, o):
+    @staticmethod
+    def efivar(o):
         retval = {
             'name' : str(o.name),
             'guid' : str(o.guid),
@@ -21,7 +21,8 @@ class EfiJSONEncoder(json.JSONEncoder):
             retval['time'] = o.bytes_time().hex()
         return retval
 
-    def efivarlist(self, o):
+    @staticmethod
+    def efivarlist(o):
         l = []
         for (key, item) in o.items():
             l.append(item)
