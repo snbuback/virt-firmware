@@ -24,6 +24,7 @@ package:
   - make install
   - make test-dump
   - make test-vars
+  - make test-sigdb
   - make test-unittest
 
 test-fedora:
