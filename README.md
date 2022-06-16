@@ -32,7 +32,6 @@ virt-fw-vars \
     --enroll-redhat \
     --secure-boot
 ```
-
 Try `virt-fw-vars --help` for more usage information.
 
 virt-fw-vars can handle edk2 variable stores (which are flash firmware
@@ -45,6 +44,15 @@ that (it is an empty variable store).
 
 aws variable stores can also be created from scratch and written to a
 file with using the `--output-aws` option.
+
+
+## virt-fw-sigdb
+
+Print and edit efi signature database files, example:
+```
+virt-fw-sigdb -i /etc/pki/ca-trust/extracted/edk2/cacerts.bin --print
+```
+Try `virt-fw-sigdb --help` for more usage information.
 
 
 ## host-efi-vars
