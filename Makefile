@@ -14,6 +14,7 @@ PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
 FW_IMAGE	:= $(wildcard /usr/share/edk2/ovmf/*.fd)
 FW_IMAGE	+= $(wildcard /usr/share/edk2/aarch64/*.fd)
+CERT_DB		:= /etc/pki/ca-trust/extracted/edk2/cacerts.bin
 
 default:
 	@echo "targets: lint install uninstall clean"
@@ -43,7 +44,7 @@ install:
 uninstall:
 	python3 -m pip uninstall virt-firmware
 
-test check: test-dump test-vars test-unittest
+test check: test-dump test-vars test-sigdb test-unittest
 
 test-dump:
 	virt-fw-dump --help
@@ -59,6 +60,10 @@ test-vars:
 	virt-fw-vars --enroll-redhat --secure-boot --output-aws vars.aws
 	virt-fw-vars -i vars.aws --print --verbose
 	rm -f vars-1.fd vars-2.fd vars.json vars.aws *.pem
+
+test-sigdb:
+	virt-fw-sigdb --help
+	if test -f "$(CERT_DB)"; then virt-fw-sigdb --input "$(CERT_DB)" --print; fi
 
 test-unittest:
 	python3 tests/tests.py
