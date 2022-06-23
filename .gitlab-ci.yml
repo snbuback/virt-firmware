@@ -55,3 +55,16 @@ pages:
   artifacts:
     paths:
       - public/
+
+twine:
+  stage: deploy
+  image: python:latest
+  dependencies:
+    - package
+  only:
+    - tags
+  script:
+    - pip install twine
+    - ls -l dist
+    - python -m twine check dist/*
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
