@@ -52,8 +52,9 @@ test-rpm:
   stage: test
   dependencies:
     - package
+  before_script:
   script:
-    - rpm -vh -i rpms/noarch/*.noarch.rpm
+    - dnf install -y rpms/noarch/*.noarch.rpm
     - *testscript
 
 pages:
