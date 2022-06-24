@@ -6,12 +6,8 @@ before_script:
   - pip3 install --user crc32c pylint build twine
   - export PATH="${PATH}:${HOME}/.local/bin"
 
-pylint:
-  script:
-    - make install
-    - make pylint
-
 package:
+  stage: build
   script:
     - dnf install -y fedora-packager pyp2rpm createrepo
     - make dist rpms
@@ -26,24 +22,34 @@ package:
   - make test-sigdb
   - make test-unittest
 
+pylint:
+  stage: test
+  script:
+    - make install
+    - make pylint
+
 test-fedora:
+  stage: test
   script:
     - make install
     - *testscript
 
 test-centos8:
+  stage: test
   image: quay.io/centos/centos:stream8
   script:
     - make install
     - *testscript
 
 test-centos9:
+  stage: test
   image: quay.io/centos/centos:stream9
   script:
     - make install
     - *testscript
 
 test-rpm:
+  stage: test
   dependencies:
     - package
   script:
