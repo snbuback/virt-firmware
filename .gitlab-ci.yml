@@ -1,20 +1,10 @@
 image: registry.fedoraproject.org/fedora:latest
 
-before_script:
-  - dnf install -y make python3-pip python3-setuptools python3-devel python3-cryptography edk2-ovmf tree diffutils gcc
+.instscript: &instscript
+  - dnf install -y python3-pip python3-setuptools python3-devel python3-cryptography make gcc diffutils edk2-ovmf
   - dnf install -y edk2-aarch64 || true # optional
   - pip3 install --user crc32c pylint build twine
   - export PATH="${PATH}:${HOME}/.local/bin"
-
-package:
-  stage: build
-  script:
-    - dnf install -y fedora-packager pyp2rpm createrepo
-    - make dist rpms
-  artifacts:
-    paths:
-      - dist
-      - rpms
 
 .testscript: &testscript
   - make test-dump
@@ -22,14 +12,30 @@ package:
   - make test-sigdb
   - make test-unittest
 
+package:
+  stage: build
+  before_script:
+    - *instscript
+    - dnf install -y fedora-packager pyp2rpm createrepo
+  script:
+    - make dist rpms
+  artifacts:
+    paths:
+      - dist
+      - rpms
+
 pylint:
   stage: test
+  before_script:
+    - *instscript
   script:
     - make install
     - make pylint
 
 test-fedora:
   stage: test
+  before_script:
+    - *instscript
   script:
     - make install
     - *testscript
@@ -37,6 +43,8 @@ test-fedora:
 test-centos8:
   stage: test
   image: quay.io/centos/centos:stream8
+  before_script:
+    - *instscript
   script:
     - make install
     - *testscript
@@ -44,6 +52,8 @@ test-centos8:
 test-centos9:
   stage: test
   image: quay.io/centos/centos:stream9
+  before_script:
+    - *instscript
   script:
     - make install
     - *testscript
@@ -53,6 +63,8 @@ test-rpm:
   dependencies:
     - package
   before_script:
+    - dnf install -y edk2-ovmf    || true # optional
+    - dnf install -y edk2-aarch64 || true # optional
   script:
     - dnf install -y rpms/noarch/*.noarch.rpm
     - *testscript
@@ -63,6 +75,8 @@ pages:
     - package
   only:
     - tags
+  before_script:
+    - dnf install -y tree
   script:
     - mkdir public
     - mv dist rpms public
