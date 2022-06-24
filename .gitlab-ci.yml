@@ -21,7 +21,6 @@ package:
       - rpms
 
 .testscript: &testscript
-  - make install
   - make test-dump
   - make test-vars
   - make test-sigdb
@@ -29,16 +28,26 @@ package:
 
 test-fedora:
   script:
+    - make install
     - *testscript
 
 test-centos8:
   image: quay.io/centos/centos:stream8
   script:
+    - make install
     - *testscript
 
 test-centos9:
   image: quay.io/centos/centos:stream9
   script:
+    - make install
+    - *testscript
+
+test-rpm:
+  dependencies:
+    - package
+  script:
+    - rpm -vh -i rpms/noarch/*.noarch.rpm
     - *testscript
 
 pages:
