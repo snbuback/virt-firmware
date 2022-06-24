@@ -25,20 +25,13 @@ package:
       - dist
       - rpms
 
-pylint:
+test-fedora-pylint:
   stage: test
   before_script:
     - *instscript
   script:
     - make install
     - make pylint
-
-test-fedora:
-  stage: test
-  before_script:
-    - *instscript
-  script:
-    - make install
     - *testscript
 
 test-centos8:
