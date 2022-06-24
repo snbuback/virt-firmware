@@ -61,8 +61,9 @@ test-centos9:
 
 test-rpm:
   stage: test
-  dependencies:
-    - package
+  needs:
+    - job: package
+      artifacts: true
   before_script:
     - dnf install -y make diffutils edk2-ovmf
     - dnf install -y edk2-aarch64 || true # optional
@@ -72,8 +73,9 @@ test-rpm:
 
 pages:
   stage: deploy
-  dependencies:
-    - package
+  needs:
+    - job: package
+      artifacts: true
   only:
     - tags
   before_script:
@@ -90,8 +92,9 @@ pages:
 twine:
   stage: deploy
   image: python:latest
-  dependencies:
-    - package
+  needs:
+    - job: package
+      artifacts: true
   only:
     - tags
   script:
