@@ -343,6 +343,14 @@ class EfiVarList(collections.UserDict):
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_WIN, False)
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_3RD, False)
 
+    def add_distro_keys(self, distro):
+        certlist = certs.DISTRO_CA.get(distro)
+        if not certlist:
+            l = ', '.join(certs.DISTRO_CA.keys())
+            raise RuntimeError(f'unknown distro: {distro} (valid: {l})')
+        for item in certlist:
+            self.add_cert('db', guids.OvmfEnrollDefaultKeys, item, False)
+
     @staticmethod
     def print_siglist(slist):
         name = guids.name(slist.guid)

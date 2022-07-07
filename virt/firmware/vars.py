@@ -71,6 +71,11 @@ def main():
     parser.add_option('--enroll-redhat', dest = 'redhat',
                       action = 'store_true', default = False,
                       help = 'enroll default certificates for redhat platform')
+    parser.add_option('--no-microsoft', dest = 'microsoft',
+                      action = 'store_false', default = True,
+                      help = 'do not add microsoft keys')
+    parser.add_option('--distro-keys', dest = 'distro', type = 'string', action = 'append',
+                      help = 'add ca keys for DISTRO', metavar = 'DISTRO')
     parser.add_option('--sb', '--secure-boot', dest = 'secureboot',
                       action = 'store_true', default = False,
                       help = 'enable secure boot mode')
@@ -144,7 +149,12 @@ def main():
 
     if options.redhat:
         varlist.enroll_platform_redhat()
-        varlist.add_microsoft_keys()
+        if options.microsoft:
+            varlist.add_microsoft_keys()
+
+    if options.distro:
+        for item in options.distro:
+            varlist.add_distro_keys(item)
 
     if options.pk:
         varlist.add_cert('PK', options.pk[0], options.pk[1], True)

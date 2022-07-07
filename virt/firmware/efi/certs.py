@@ -14,3 +14,15 @@ MS_WIN = resource_filename('virt.firmware', 'certs/MicrosoftWindowsProductionPCA
 
 # microsoft: used to sign 3rd party binaries (shim.efi, drivers).
 MS_3RD = resource_filename('virt.firmware', 'certs/MicrosoftCorporationUEFICA2011.pem')
+
+# linux distro ca keys
+DISTRO_CA = {
+    'rhel' : [
+        resource_filename('virt.firmware', 'certs/RedHatSecureBootCA3.pem'),
+        resource_filename('virt.firmware', 'certs/RedHatSecureBootCA5.pem'),
+        resource_filename('virt.firmware', 'certs/RedHatSecureBootCA6.pem'),
+    ],
+    'fedora' : [
+        resource_filename('virt.firmware', 'certs/FedoraSecureBootCA.pem'),
+    ],
+}

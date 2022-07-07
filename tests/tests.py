@@ -33,11 +33,21 @@ class TestsEdk2(unittest.TestCase):
         self.assertFalse(aws.AwsVarStore.probe(VARS_EMPTY))
 
     @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
-    def test_enroll(self):
+    def test_enroll_microsoft(self):
         store = edk2.Edk2VarStore(VARS_EMPTY)
         varlist = store.get_varlist()
         varlist.enroll_platform_redhat()
         varlist.add_microsoft_keys()
+        varlist.enable_secureboot()
+        blob = store.bytes_varstore(varlist)
+
+    @unittest.skipUnless(os.path.exists(VARS_EMPTY), 'no empty vars file')
+    def test_enroll_distro(self):
+        store = edk2.Edk2VarStore(VARS_EMPTY)
+        varlist = store.get_varlist()
+        varlist.enroll_platform_redhat()
+        varlist.add_distro_keys('rhel')
+        varlist.add_distro_keys('fedora')
         varlist.enable_secureboot()
         blob = store.bytes_varstore(varlist)
 
