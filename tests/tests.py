@@ -48,6 +48,7 @@ class TestsEdk2(unittest.TestCase):
         varlist.enroll_platform_redhat()
         varlist.add_distro_keys('rhel')
         varlist.add_distro_keys('fedora')
+        varlist.add_distro_keys('centos')
         varlist.enable_secureboot()
         blob = store.bytes_varstore(varlist)
 
