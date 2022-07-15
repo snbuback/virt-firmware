@@ -70,7 +70,7 @@ class TestsEdk2(unittest.TestCase):
         varlist.set_boot_next(99)
 
     def test_set_boot_filepath(self):
-        path = devpath.DevicePath.filepath("/EFI/fedora/shimx64.efi")
+        path = devpath.DevicePath.filepath("\\EFI\\fedora\\shimx64.efi")
         varlist = efivar.EfiVarList()
         varlist.set_boot_entry(99, 'shim', path)
         varlist.set_boot_next(99)
