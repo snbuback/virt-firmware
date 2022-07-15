@@ -47,7 +47,7 @@ def main():
                       metavar = 'LINK')
     parser.add_option('--append-boot-filepath', dest = 'append_boot_filepath',
                       action = 'append', type = 'string',
-                      help = 'append boot entry for FILE (once, using BootNext)',
+                      help = 'append boot entry for FILE (permanent, using BootOrder)',
                       metavar = 'FILE')
 
     parser.add_option('--set-pk', dest = 'pk',  nargs = 2,
