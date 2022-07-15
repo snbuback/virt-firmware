@@ -63,11 +63,17 @@ class TestsEdk2(unittest.TestCase):
         varlist = efivar.EfiVarList()
         varlist.add_hash('db', 'shim', '70183c6c50978ee60f61d8a60580d5e0022114f20f3b99715617054e916770a4')
 
-    def test_add_boot_url(self):
+    def test_set_boot_url(self):
         path = devpath.DevicePath.uri("http://server/path/boot.iso")
         varlist = efivar.EfiVarList()
-        varlist.set_boot_entry(0x99, 'netboot', path)
-        varlist.set_boot_next(0x99)
+        varlist.set_boot_entry(99, 'netboot', path)
+        varlist.set_boot_next(99)
+
+    def test_set_boot_filepath(self):
+        path = devpath.DevicePath.filepath("/EFI/fedora/shimx64.efi")
+        varlist = efivar.EfiVarList()
+        varlist.set_boot_entry(99, 'shim', path)
+        varlist.set_boot_next(99)
 
     @unittest.skipUnless(os.path.exists('/sys/firmware/efi/efivars'), 'no efivars fs')
     def test_parse_linux(self):

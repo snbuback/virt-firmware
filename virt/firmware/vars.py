@@ -135,10 +135,10 @@ def main():
 
     if options.set_boot_uri:
         items = options.set_boot_uri.split('/')
-        title = 'netboot ' + items[len(items)-1]
+        title = 'netboot ' + items[-1]
         bpath = devpath.DevicePath.uri(options.set_boot_uri)
-        varlist.set_boot_entry(0x99, title, bpath)
-        varlist.set_boot_next(0x99)
+        varlist.set_boot_entry(99, title, bpath)
+        varlist.set_boot_next(99)
 
     if options.set_json:
         with open(options.set_json, "r", encoding = 'utf-8') as f:

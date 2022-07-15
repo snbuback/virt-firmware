@@ -282,7 +282,7 @@ class EfiVarList(collections.UserDict):
         var.set_bool(value)
 
     def set_boot_entry(self, index, title, path):
-        name = f'Boot{index:04x}'
+        name = f'Boot{index:04d}'
         var = self.get(name)
         if not var:
             var = self.create(name)
@@ -290,12 +290,20 @@ class EfiVarList(collections.UserDict):
         logging.info('set variable %s: %s = %s', name, t, path)
         var.set_boot_entry(1, t, path)
 
+    def add_boot_entry(self, title, path):
+        for index in range(9999):
+            name = f'Boot{index:04d}'
+            var = self.get(name)
+            if not var:
+                self.set_boot_entry(index, title, path)
+                return index
+
     def set_boot_next(self, index):
         name = 'BootNext'
         var = self.get(name)
         if not var:
             var = self.create(name)
-        logging.info('set variable %s: 0x%04x', name, index)
+        logging.info('set variable %s: 0x%04d', name, index)
         var.set_boot_next(index)
 
     def add_cert(self, name, owner, filename, replace = False):
