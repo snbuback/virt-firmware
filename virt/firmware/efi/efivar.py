@@ -281,6 +281,7 @@ class EfiVarList(collections.UserDict):
         logging.info('set variable %s: %s', name, value)
         var.set_bool(value)
 
+
     def set_boot_entry(self, index, title, path):
         name = f'Boot{index:04d}'
         var = self.get(name)
@@ -305,6 +306,7 @@ class EfiVarList(collections.UserDict):
             var = self.create(name)
         logging.info('set variable %s: %04d', name, index)
         var.set_boot_next(index)
+
 
     def add_cert(self, name, owner, filename, replace = False):
         var = self.get(name)
@@ -332,6 +334,7 @@ class EfiVarList(collections.UserDict):
         var = self.create('dbx')
         var.sigdb_add_dummy(guids.parse_str(owner))
 
+
     def enable_secureboot(self):
         self.add_dummy_dbx(guids.OvmfEnrollDefaultKeys)
         self.set_bool('SecureBootEnable', True)
@@ -358,6 +361,7 @@ class EfiVarList(collections.UserDict):
             raise RuntimeError(f'unknown distro: {distro} (valid: {l})')
         for item in certlist:
             self.add_cert('db', guids.OvmfEnrollDefaultKeys, item, False)
+
 
     @staticmethod
     def print_siglist(slist):
