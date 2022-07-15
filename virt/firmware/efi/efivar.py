@@ -303,7 +303,7 @@ class EfiVarList(collections.UserDict):
         var = self.get(name)
         if not var:
             var = self.create(name)
-        logging.info('set variable %s: 0x%04d', name, index)
+        logging.info('set variable %s: %04d', name, index)
         var.set_boot_next(index)
 
     def add_cert(self, name, owner, filename, replace = False):
