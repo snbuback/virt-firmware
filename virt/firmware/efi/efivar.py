@@ -73,18 +73,13 @@ efivar_defaults = {
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
         'guid' : guids.Shim,
     },
-    'BootNext' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS),
-        'guid' : guids.EfiGlobalVariable,
-    },
-    'Boot0099' : {
-        'attr' : (EFI_VARIABLE_NON_VOLATILE |
-                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                  EFI_VARIABLE_RUNTIME_ACCESS),
-        'guid' : guids.EfiGlobalVariable,
-    },
+}
+
+boot_defaults = {
+    'attr' : (EFI_VARIABLE_NON_VOLATILE |
+              EFI_VARIABLE_BOOTSERVICE_ACCESS |
+              EFI_VARIABLE_RUNTIME_ACCESS),
+    'guid' : guids.EfiGlobalVariable,
 }
 
 sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "TlsCaCertificate")
@@ -115,6 +110,9 @@ class EfiVar:
         self.sigdb = None
 
         defaults = efivar_defaults.get(str(name))
+        if defaults is None and str(name).startswith('Boot'):
+            defaults = boot_defaults
+
         if self.guid is None:
             if defaults:
                 self.guid = guids.parse_str(defaults['guid'])
@@ -201,6 +199,10 @@ class EfiVar:
         self.data = struct.pack('=H', index)
         self.update_time()
 
+    def append_boot_order(self, index):
+        self.data += struct.pack('=H', index)
+        self.update_time()
+
     def fmt_bool(self):
         if self.data[0]:
             return 'bool: ON'
@@ -283,7 +285,7 @@ class EfiVarList(collections.UserDict):
 
 
     def set_boot_entry(self, index, title, path):
-        name = f'Boot{index:04d}'
+        name = f'Boot{index:04X}'
         var = self.get(name)
         if not var:
             var = self.create(name)
@@ -292,8 +294,8 @@ class EfiVarList(collections.UserDict):
         var.set_boot_entry(1, t, path)
 
     def add_boot_entry(self, title, path):
-        for index in range(9999):
-            name = f'Boot{index:04d}'
+        for index in range(0xffff):
+            name = f'Boot{index:04X}'
             var = self.get(name)
             if not var:
                 self.set_boot_entry(index, title, path)
@@ -304,8 +306,16 @@ class EfiVarList(collections.UserDict):
         var = self.get(name)
         if not var:
             var = self.create(name)
-        logging.info('set variable %s: %04d', name, index)
+        logging.info('set variable %s: 0x%04X', name, index)
         var.set_boot_next(index)
+
+    def append_boot_order(self, index):
+        name = 'BootOrder'
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('append to variable %s: 0x%04X', name, index)
+        var.append_boot_order(index)
 
 
     def add_cert(self, name, owner, filename, replace = False):
