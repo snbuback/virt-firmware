@@ -23,14 +23,19 @@ class DevicePathElem:
             self.data = data[ 4 : size ]
 
     def set_ipv4(self):
-        self.devtype = 0x03
-        self.subtype = 0x0c
+        self.devtype = 0x03	# msg
+        self.subtype = 0x0c	# ipv4
         self.data    = bytes(23) # use dhcp
 
     def set_uri(self, uri):
-        self.devtype = 0x03
-        self.subtype = 0x18
+        self.devtype = 0x03	# msg
+        self.subtype = 0x18	# uri
         self.data    = str(uri).encode()
+
+    def set_filepath(self, filepath):
+        self.devtype = 0x04	# media
+        self.subtype = 0x04	# filepath
+        self.data    = bytes(ucs16.from_string(str(filepath)))
 
     def fmt_hw(self):
         if self.subtype == 0x01:
@@ -130,6 +135,14 @@ class DevicePath(collections.UserList):
         path = DevicePath()
         elem = DevicePathElem()
         elem.set_uri(uri)
+        path.append(elem)
+        return path
+
+    @staticmethod
+    def filepath(filepath):
+        path = DevicePath()
+        elem = DevicePathElem()
+        elem.set_filepath(filepath)
         path.append(elem)
         return path
 
