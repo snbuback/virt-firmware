@@ -11,6 +11,7 @@ image: registry.fedoraproject.org/fedora:latest
   - make test-dump
   - make test-vars
   - make test-sigdb
+  - make test-pe
   - make test-unittest
 
 package:

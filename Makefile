@@ -44,7 +44,7 @@ install:
 uninstall:
 	python3 -m pip uninstall virt-firmware
 
-test check: test-dump test-vars test-sigdb test-unittest
+test check: test-dump test-vars test-sigdb test-pe test-unittest
 
 test-dump:
 	virt-fw-dump --help
@@ -60,6 +60,11 @@ test-vars:
 	virt-fw-vars --enroll-redhat --secure-boot --output-aws vars.aws
 	virt-fw-vars -i vars.aws --print --verbose
 	rm -f vars-1.fd vars-2.fd vars.json vars.aws *.pem
+
+test-pe:
+	pe-dumpinfo --help
+	pe-listsigs --help
+	pe-addsigs --help
 
 test-sigdb:
 	virt-fw-sigdb --help
