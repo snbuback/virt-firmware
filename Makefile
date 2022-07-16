@@ -12,6 +12,8 @@ PYLINT_OPTS	+= --extension-pkg-allow-list=crc32c
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
+KERNEL		:=  /boot/vmlinuz-$(shell uname -r)
+
 FW_IMAGE	:= $(wildcard /usr/share/edk2/ovmf/*.fd)
 FW_IMAGE	+= $(wildcard /usr/share/edk2/aarch64/*.fd)
 CERT_DB		:= /etc/pki/ca-trust/extracted/edk2/cacerts.bin
@@ -65,6 +67,7 @@ test-pe:
 	pe-dumpinfo --help
 	pe-listsigs --help
 	pe-addsigs --help
+	if test -f "$(KERNEL)"; then pe-listsigs "$(KERNEL)"; fi
 
 test-sigdb:
 	virt-fw-sigdb --help
