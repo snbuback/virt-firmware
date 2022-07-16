@@ -300,6 +300,7 @@ class EfiVarList(collections.UserDict):
             if not var:
                 self.set_boot_entry(index, title, path)
                 return index
+        return None
 
     def set_boot_next(self, index):
         name = 'BootNext'
