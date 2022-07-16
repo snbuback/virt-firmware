@@ -23,7 +23,7 @@ DISTRO_CA = {
         resource_filename('virt.firmware', 'certs/RedHatSecureBootCA6.pem'),
     ],
     'fedora' : [
-        resource_filename('virt.firmware', 'certs/FedoraSecureBootCA.pem'),
+        resource_filename('virt.firmware', 'certs/fedoraca-20200709.pem'),
     ],
     'centos' : [
         resource_filename('virt.firmware', 'certs/CentOSSecureBootCAkey1.pem'),
