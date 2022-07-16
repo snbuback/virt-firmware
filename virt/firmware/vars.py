@@ -147,7 +147,8 @@ def main():
         varlist.set_boot_next(0x99)
 
     if options.append_boot_filepath:
-        for filepath in options.append_boot_filepath:
+        for item in options.append_boot_filepath:
+            filepath = item.replace('/', '\\')
             items = filepath.split('\\')
             title = 'file ' + items[-1]
             bpath = devpath.DevicePath.filepath(filepath)
