@@ -17,14 +17,25 @@ def common_name(item):
     except IndexError:
         return 'no CN'
 
-def sig_type2(data, extract = False):
+def print_cert_short(cert):
+    scn = common_name(cert.subject)
+    icn = common_name(cert.issuer)
+    print(f'#             subject CN: {scn}')
+    print(f'#             issuer  CN: {icn}')
+
+def print_cert_long(cert):
+    print(f'#             subject: {cert.subject.rfc4514_string()}')
+    print(f'#             issuer : {cert.issuer.rfc4514_string()}')
+    print(f'#             valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
+
+def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
-        scn = common_name(cert.subject)
-        icn = common_name(cert.issuer)
         print('#          certificate')
-        print(f'#             subject CN: {scn}')
-        print(f'#             issuer  CN: {icn}')
+        if (verbose):
+            print_cert_long(cert)
+        else:
+            print_cert_short(cert)
 
         if extract:
             fn = "".join(x for x in scn if x.isalnum()) + '.pem'
@@ -32,7 +43,7 @@ def sig_type2(data, extract = False):
             with open(fn, 'wb') as f:
                 f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-def efi_binary(filename, extract):
+def efi_binary(filename, extract = False, verbose = False):
     print(f'# file: {filename}')
     pe = pefile.PE(filename)
     for sec in pe.sections:
@@ -56,7 +67,7 @@ def efi_binary(filename, extract):
                     f.write(sigs [ pos : pos + slen ])
             if stype == 2:
                 sig_type2(sigs [ pos + 8 : pos + slen ],
-                          extract)
+                          extract, verbose)
             pos += slen
             pos = (pos + 7) & ~7 # align
 
@@ -123,9 +134,12 @@ def pe_listsigs():
     parser.add_option('-x', '--extract', dest = 'extract',
                       action = 'store_true', default = False,
                       help = 'also extract signatures and certificates')
+    parser.add_option('-v', '--verbose', dest = 'verbose',
+                      action = 'store_true', default = False,
+                      help = 'print more certificate details')
     (options, args) = parser.parse_args()
     for filename in args:
-        efi_binary(filename, options.extract)
+        efi_binary(filename, options.extract, options.verbose)
     return 0
 
 def pe_addsigs():
