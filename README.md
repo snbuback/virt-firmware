@@ -60,6 +60,17 @@ Try `virt-fw-sigdb --help` for more usage information.
 Read efi variables from linux efivarfs and decode/print them.
 
 
+## pe-dumpinfo
+
+Information dump for pe (the format used by efi) binaries.
+
+
+## pe-listsigs
+
+List signatures and certificate chain for pe binaries.
+Can also extract certificates & signatures.
+
+
 ## using the python modules
 
 There isn't much documentation yet, sorry.  Best code reads to get
