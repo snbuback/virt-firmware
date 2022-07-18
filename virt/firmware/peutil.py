@@ -32,12 +32,13 @@ def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
         print('#          certificate')
-        if (verbose):
+        if verbose:
             print_cert_long(cert)
         else:
             print_cert_short(cert)
 
         if extract:
+            scn = common_name(cert.subject)
             fn = "".join(x for x in scn if x.isalnum()) + '.pem'
             print(f'#             >>> {fn}')
             with open(fn, 'wb') as f:
