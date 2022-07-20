@@ -17,6 +17,12 @@ def common_name(item):
     except IndexError:
         return 'no CN'
 
+def is_ca_cert(cert):
+    bc = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
+    if bc:
+        return bc.value.ca
+    return False
+
 def print_cert_short(cert):
     scn = common_name(cert.subject)
     icn = common_name(cert.issuer)
@@ -27,6 +33,7 @@ def print_cert_long(cert):
     print(f'#             subject: {cert.subject.rfc4514_string()}')
     print(f'#             issuer : {cert.issuer.rfc4514_string()}')
     print(f'#             valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
+    print(f'#             CA     : {is_ca_cert(cert)}')
 
 def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
