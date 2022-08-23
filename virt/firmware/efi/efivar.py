@@ -219,10 +219,10 @@ class EfiVar:
                           name.size() + 6 + pathsize ]
         optdata = self.data[ name.size() + 6 + pathsize : ]
         obj = devpath.DevicePath(path)
-        str = f'boot entry: name="{name}" devpath={obj}'
+        string = f'boot entry: name="{name}" devpath={obj}'
         if len(optdata):
-            str += f' optdata={optdata.hex()}'
-        return str
+            string += f' optdata={optdata.hex()}'
+        return string
 
     def fmt_boot_list(self):
         bootlist = []
