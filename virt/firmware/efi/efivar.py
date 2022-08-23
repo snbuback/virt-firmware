@@ -217,8 +217,12 @@ class EfiVar:
         name = ucs16.from_ucs16(self.data, 6)
         path = self.data[ name.size() + 6 :
                           name.size() + 6 + pathsize ]
+        optdata = self.data[ name.size() + 6 + pathsize : ]
         obj = devpath.DevicePath(path)
-        return f'boot entry: name="{name}" devpath={obj}'
+        str = f'boot entry: name="{name}" devpath={obj}'
+        if len(optdata):
+            str += f' optdata={optdata.hex()}'
+        return str
 
     def fmt_boot_list(self):
         bootlist = []
