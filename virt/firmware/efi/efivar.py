@@ -188,11 +188,13 @@ class EfiVar:
             self.data = b'\x00'
         self.update_time()
 
-    def set_boot_entry(self, attr, title, path):
+    def set_boot_entry(self, attr, title, path, optdata = None):
         pathdata = bytes(path)
         self.data = struct.pack('=LH', attr, len(pathdata))
         self.data += bytes(title)
         self.data += pathdata
+        if optdata:
+            self.data += optdata
         self.update_time()
 
     def set_boot_next(self, index):
@@ -288,21 +290,21 @@ class EfiVarList(collections.UserDict):
         var.set_bool(value)
 
 
-    def set_boot_entry(self, index, title, path):
+    def set_boot_entry(self, index, title, path, optdata = None):
         name = f'Boot{index:04X}'
         var = self.get(name)
         if not var:
             var = self.create(name)
         t = ucs16.from_string(title)
         logging.info('set variable %s: %s = %s', name, t, path)
-        var.set_boot_entry(1, t, path)
+        var.set_boot_entry(1, t, path, optdata)
 
-    def add_boot_entry(self, title, path):
+    def add_boot_entry(self, title, path, optdata = None):
         for index in range(0xffff):
             name = f'Boot{index:04X}'
             var = self.get(name)
             if not var:
-                self.set_boot_entry(index, title, path)
+                self.set_boot_entry(index, title, path, optdata)
                 return index
         return None
 

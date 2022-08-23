@@ -8,6 +8,7 @@ import optparse
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
 from virt.firmware.efi import devpath
+from virt.firmware.efi import ucs16
 
 from virt.firmware.varstore import edk2
 from virt.firmware.varstore import aws
@@ -164,11 +165,16 @@ def main():
 
     if options.append_boot_filepath:
         for item in options.append_boot_filepath:
-            filepath = item.replace('/', '\\')
+            strings = item.replace('/', '\\').split(' ')
+            filepath = strings[0]
+            if len(strings) > 1:
+                optdata = bytes(ucs16.from_string(strings[1]))
+            else:
+                optdata = None
             items = filepath.split('\\')
             title = 'file ' + items[-1]
             bpath = devpath.DevicePath.filepath(filepath)
-            index = varlist.add_boot_entry(title, bpath)
+            index = varlist.add_boot_entry(title, bpath, optdata)
             varlist.append_boot_order(index)
 
     if options.set_json:
