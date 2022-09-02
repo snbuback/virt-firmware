@@ -12,12 +12,6 @@ PYLINT_OPTS	+= --extension-pkg-allow-list=crc32c
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
-KERNEL		:=  /boot/vmlinuz-$(shell uname -r)
-
-FW_IMAGE	:= $(wildcard /usr/share/edk2/ovmf/*.fd)
-FW_IMAGE	+= $(wildcard /usr/share/edk2/aarch64/*.fd)
-CERT_DB		:= /etc/pki/ca-trust/extracted/edk2/cacerts.bin
-
 default:
 	@echo "targets: lint install uninstall clean"
 
@@ -49,29 +43,16 @@ uninstall:
 test check: test-dump test-vars test-sigdb test-pe test-unittest
 
 test-dump:
-	virt-fw-dump --help
-	for i in $(FW_IMAGE); do echo "# $$i"; virt-fw-dump -i $$i || exit 1; done
+	tests/test-dump.sh
 
 test-vars:
-	virt-fw-vars --help
-	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.secboot.fd --print --hexdump --extract-certs
-	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.fd -o vars-1.fd --output-json vars.json --enroll-redhat --secure-boot
-	virt-fw-vars -i /usr/share/OVMF/OVMF_VARS.fd -o vars-2.fd --set-json vars.json
-	diff vars-1.fd vars-2.fd
-	virt-fw-vars -i vars-1.fd --print --verbose
-	virt-fw-vars --enroll-redhat --secure-boot --output-aws vars.aws
-	virt-fw-vars -i vars.aws --print --verbose
-	rm -f vars-1.fd vars-2.fd vars.json vars.aws *.pem
+	tests/test-vars.sh
 
 test-pe:
-	pe-dumpinfo --help
-	pe-listsigs --help
-	pe-addsigs --help
-	if test -f "$(KERNEL)"; then pe-listsigs "$(KERNEL)" || exit 1; fi
+	tests/test-pe.sh
 
 test-sigdb:
-	virt-fw-sigdb --help
-	if test -f "$(CERT_DB)"; then virt-fw-sigdb --input "$(CERT_DB)" --print || exit 1; fi
+	tests/test-sigdb.sh
 
 test-unittest:
 	python3 tests/tests.py
