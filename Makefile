@@ -67,11 +67,11 @@ test-pe:
 	pe-dumpinfo --help
 	pe-listsigs --help
 	pe-addsigs --help
-	if test -f "$(KERNEL)"; then pe-listsigs "$(KERNEL)"; fi
+	if test -f "$(KERNEL)"; then pe-listsigs "$(KERNEL)" || exit 1; fi
 
 test-sigdb:
 	virt-fw-sigdb --help
-	if test -f "$(CERT_DB)"; then virt-fw-sigdb --input "$(CERT_DB)" --print; fi
+	if test -f "$(CERT_DB)"; then virt-fw-sigdb --input "$(CERT_DB)" --print || exit 1; fi
 
 test-unittest:
 	python3 tests/tests.py
