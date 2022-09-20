@@ -18,29 +18,25 @@ def main():
     parser.add_option('--template', dest = 'template', type = 'string',
                       help = 'use varstore template FILE', metavar = 'FILE',
                       default = '/usr/share/edk2/ovmf/OVMF_VARS.fd')
-    parser.add_option('--varstore', dest = 'varstore', type = 'string',
-                      help = 'migrate variable store FILE', metavar = 'FILE')
-    parser.add_option('--guest', dest = 'guest', type = 'string',
-                      help = 'migrate libvirt guest NAME', metavar = 'NAME')
+    parser.add_option('--varstore', dest = 'varstores', type = 'string', action = 'append',
+                      help = 'migrate variable store FILE', metavar = 'FILE', default = [])
+    parser.add_option('--guest', dest = 'guests', type = 'string', action = 'append',
+                      help = 'migrate libvirt guest NAME', metavar = 'NAME', default = [])
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    # check for arguments
-    if options.varstore:
-        varsfile = options.varstore
-    elif options.guest:
-        varsfile = f'/var/lib/libvirt/qemu/nvram/{options.guest}_VARS.fd'
-    else:
-        logging.error('must specify --varstore or --guest')
-        sys.exit(1)
-
-    oldstore = edk2.Edk2VarStore(varsfile)
     newstore = edk2.Edk2VarStore(options.template)
 
-    varlist = oldstore.get_varlist()
-    newstore.write_varstore(varsfile, varlist)
+    for guest in options.guests:
+        options.varstores.append(f'/var/lib/libvirt/qemu/nvram/{guest}_VARS.fd')
+
+    for varsfile in options.varstores:
+        oldstore = edk2.Edk2VarStore(varsfile)
+        varlist = oldstore.get_varlist()
+        newstore.write_varstore(varsfile, varlist)
+
     return 0
 
 if __name__ == '__main__':
