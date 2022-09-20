@@ -16,7 +16,8 @@ def main():
     parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_option('--template', dest = 'template', type = 'string',
-                      help = 'use varstore template FILE', metavar = 'FILE')
+                      help = 'use varstore template FILE', metavar = 'FILE',
+                      default = '/usr/share/edk2/ovmf/OVMF_VARS.fd')
     parser.add_option('--varstore', dest = 'varstore', type = 'string',
                       help = 'migrate variable store FILE', metavar = 'FILE')
     parser.add_option('--guest', dest = 'guest', type = 'string',
@@ -35,13 +36,8 @@ def main():
         logging.error('must specify --varstore or --guest')
         sys.exit(1)
 
-    if options.template:
-        tmplfile = options.template
-    else:
-        tmplfile = '/usr/share/edk2/ovmf/OVMF_VARS.fd'
-
     oldstore = edk2.Edk2VarStore(varsfile)
-    newstore = edk2.Edk2VarStore(tmplfile)
+    newstore = edk2.Edk2VarStore(options.template)
 
     varlist = oldstore.get_varlist()
     newstore.write_varstore(varsfile, varlist)
