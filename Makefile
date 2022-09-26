@@ -12,7 +12,7 @@ PYLINT_OPTS	+= --extension-pkg-allow-list=crc32c
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
-MANPAGES	:= virt-fw-dump.1 virt-fw-vars.1
+MANPAGES	:= virt-fw-dump.1 virt-fw-vars.1 virt-fw-sigdb.1
 
 default:
 	@echo "targets: lint install uninstall clean"
