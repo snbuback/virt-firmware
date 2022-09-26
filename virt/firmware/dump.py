@@ -584,7 +584,7 @@ def main():
                       help = 'print included modules')
     parser.add_option('--ovmf-meta', dest = 'fmt',
                       action = 'store_const', const = 'ovmf-meta',
-                      help = 'print included modules')
+                      help = 'decode ovmf metadata (in reset vector)')
     (options, args) = parser.parse_args()
 
     if not options.input:
