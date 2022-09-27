@@ -12,7 +12,9 @@ PYLINT_OPTS	+= --extension-pkg-allow-list=crc32c
 PKG_VERSION	:= $(shell awk '/version/ { print $$3 }' setup.cfg)
 PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 
-MANPAGES	:= virt-fw-dump.1 virt-fw-vars.1 virt-fw-sigdb.1
+MANPAGES	:= man/virt-fw-dump.1
+MANPAGES	+= man/virt-fw-vars.1
+MANPAGES	+= man/virt-fw-sigdb.1
 
 default:
 	@echo "targets: lint install uninstall clean"
@@ -38,7 +40,7 @@ rpm rpms package: $(PKG_TARBALL)
 
 man manpages: $(MANPAGES)
 
-%.1:
+man/%.1:
 	help2man --version-string $(PKG_VERSION) --no-info $* > $@
 
 install:
@@ -68,4 +70,3 @@ clean:
 	rm -rf build virt_firmware.egg-info $(PKG_TARBALL) rpms dist
 	rm -rf *~ virt/firmware/*~ virt/firmware/efi/*~
 	rm -rf *~ virt/firmware/__pycache__ virt/firmware/efi/__pycache__
-	rm -rf $(MANPAGES)
