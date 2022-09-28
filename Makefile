@@ -38,10 +38,16 @@ rpm rpms package: $(PKG_TARBALL)
 		rpms/src/*.src.rpm
 	createrepo rpms
 
+
 man manpages: $(MANPAGES)
 
 man/%.1:
 	help2man --version-string $(PKG_VERSION) --no-info $* > $@
+
+man/virt-fw-dump.1:  setup.cfg virt/firmware/dump.py
+man/virt-fw-vars.1:  setup.cfg virt/firmware/vars.py
+man/virt-fw-sigdb.1: setup.cfg virt/firmware/sigdb.py
+
 
 install:
 	python3 -m pip install --user .
