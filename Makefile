@@ -42,11 +42,11 @@ rpm rpms package: $(PKG_TARBALL)
 man manpages: $(MANPAGES)
 
 man/%.1:
-	help2man --version-string $(PKG_VERSION) --no-info $* > $@
+	help2man --version-string $(PKG_VERSION) --no-info --include man/$*.inc $* > $@
 
-man/virt-fw-dump.1:  setup.cfg virt/firmware/dump.py
-man/virt-fw-vars.1:  setup.cfg virt/firmware/vars.py
-man/virt-fw-sigdb.1: setup.cfg virt/firmware/sigdb.py
+man/virt-fw-dump.1:  setup.cfg virt/firmware/dump.py man/virt-fw-dump.inc
+man/virt-fw-vars.1:  setup.cfg virt/firmware/vars.py man/virt-fw-vars.inc
+man/virt-fw-sigdb.1: setup.cfg virt/firmware/sigdb.py man/virt-fw-sigdb.inc
 
 
 install:
