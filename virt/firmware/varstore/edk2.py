@@ -107,7 +107,7 @@ class Edk2VarStore:
         blob += bytes(var.name)
         blob += var.data
         while len(blob) & 3:
-            blob += b'\0'
+            blob += b'\xff'
         return blob
 
     def bytes_varlist(self, varlist):
