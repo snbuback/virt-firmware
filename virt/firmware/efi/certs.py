@@ -17,6 +17,9 @@ MS_3RD = resource_filename('virt.firmware', 'certs/MicrosoftCorporationUEFICA201
 
 # linux distro ca keys
 DISTRO_CA = {
+    'windows' : [
+        MS_WIN,
+    ],
     'rhel' : [
         resource_filename('virt.firmware', 'certs/RedHatSecureBootCA3.pem'),
         resource_filename('virt.firmware', 'certs/RedHatSecureBootCA5.pem'),
