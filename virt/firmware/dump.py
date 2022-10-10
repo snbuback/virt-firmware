@@ -506,9 +506,12 @@ class Edk2Image(collections.UserList):
     def parse(self, data):
         pos = 0
         step = 1024
+        skips = 0
+        maxskips = 32
         while pos + 32 < len(data):
             (tlen, sig) = struct.unpack_from('<QL', data, pos + 32)
             if sig == 0x4856465f:
+                skips = 0
                 vol = Edk2Volume(data = data [ pos : ],
                                  offset = pos)
                 pos += vol.size()
@@ -517,10 +520,15 @@ class Edk2Image(collections.UserList):
 
             guid = guids.parse_bin(data, pos)
             if str(guid) == guids.SignedCapsule:
+                skips = 0
                 upd = Edk2Capsule(data [ pos : ] )
                 pos += upd.size()
                 self.append(upd)
                 continue
+
+            skips += 1
+            if skips > maxskips:
+                return
 
             pos = (pos + step) & ~(step-1)
             continue
