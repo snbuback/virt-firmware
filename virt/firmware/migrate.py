@@ -2,7 +2,7 @@
 """ print and edit ovmf varstore files """
 import sys
 import logging
-import optparse
+import argparse
 
 from virt.firmware.varstore import edk2
 
@@ -12,17 +12,17 @@ from virt.firmware.varstore import edk2
 
 # pylint: disable=too-many-branches,too-many-statements
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
-                      help = 'set loglevel to LEVEL', metavar = 'LEVEL')
-    parser.add_option('--template', dest = 'template', type = 'string',
-                      help = 'use varstore template FILE', metavar = 'FILE',
-                      default = '/usr/share/edk2/ovmf/OVMF_VARS.fd')
-    parser.add_option('--varstore', dest = 'varstores', type = 'string', action = 'append',
-                      help = 'migrate variable store FILE', metavar = 'FILE', default = [])
-    parser.add_option('--guest', dest = 'guests', type = 'string', action = 'append',
-                      help = 'migrate libvirt guest NAME', metavar = 'NAME', default = [])
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
+                        help = 'set loglevel to LEVEL', metavar = 'LEVEL')
+    parser.add_argument('--template', dest = 'template', type = str,
+                        help = 'use varstore template FILE', metavar = 'FILE',
+                        default = '/usr/share/edk2/ovmf/OVMF_VARS.fd')
+    parser.add_argument('--varstore', dest = 'varstores', type = str, action = 'append',
+                        help = 'migrate variable store FILE', metavar = 'FILE', default = [])
+    parser.add_argument('--guest', dest = 'guests', type = str, action = 'append',
+                        help = 'migrate libvirt guest NAME', metavar = 'NAME', default = [])
+    options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))

@@ -3,7 +3,7 @@
 import sys
 import json
 import logging
-import optparse
+import argparse
 
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
@@ -19,127 +19,120 @@ from virt.firmware.varstore import aws
 
 # pylint: disable=too-many-branches,too-many-statements
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
-                      help = 'set loglevel to LEVEL', metavar = 'LEVEL')
-    parser.add_option('-i', '--input', dest = 'input', type = 'string',
-                      help = 'read edk2 or aws vars from FILE', metavar = 'FILE')
-    parser.add_option('--extract-certs', dest = 'extract',
-                      action = 'store_true', default = False,
-                      help = 'extract all certificates')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
+                        help = 'set loglevel to LEVEL', metavar = 'LEVEL')
+    parser.add_argument('-i', '--input', dest = 'input', type = str,
+                        help = 'read edk2 or aws vars from FILE', metavar = 'FILE')
+    parser.add_argument('--extract-certs', dest = 'extract',
+                        action = 'store_true', default = False,
+                        help = 'extract all certificates')
 
-    pgroup = optparse.OptionGroup(parser, 'Variable options')
-    pgroup.add_option('-d', '--delete', dest = 'delete',
-                      action = 'append', type = 'string',
-                      help = 'delete variable VAR, can be specified multiple times',
-                      metavar = 'VAR')
-    pgroup.add_option('--set-true', dest = 'set_true',
-                      action = 'append', type = 'string',
-                      help = 'set variable VAR to true, can be specified multiple times',
-                      metavar = 'VAR')
-    pgroup.add_option('--set-false', dest = 'set_false',
-                      action = 'append', type = 'string',
-                      help = 'set variable VAR to false, can be specified multiple times',
-                      metavar = 'VAR')
-    pgroup.add_option('--set-json', dest = 'set_json', type = 'string',
-                      help = 'set variables from json dump FILE',
-                      metavar = 'FILE')
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('Variable options')
+    pgroup.add_argument('-d', '--delete', dest = 'delete',
+                        action = 'append', type = str,
+                        help = 'delete variable VAR, can be specified multiple times',
+                        metavar = 'VAR')
+    pgroup.add_argument('--set-true', dest = 'set_true',
+                        action = 'append', type = str,
+                        help = 'set variable VAR to true, can be specified multiple times',
+                        metavar = 'VAR')
+    pgroup.add_argument('--set-false', dest = 'set_false',
+                        action = 'append', type = str,
+                        help = 'set variable VAR to false, can be specified multiple times',
+                        metavar = 'VAR')
+    pgroup.add_argument('--set-json', dest = 'set_json', type = str,
+                        help = 'set variables from json dump FILE',
+                        metavar = 'FILE')
 
-    pgroup = optparse.OptionGroup(parser, 'Boot configuration')
-    pgroup.add_option('--set-boot-uri', dest = 'set_boot_uri',
-                      help = 'set network boot uri to LINK (once, using BootNext)',
-                      metavar = 'LINK')
-    pgroup.add_option('--append-boot-filepath', dest = 'append_boot_filepath',
-                      action = 'append', type = 'string',
-                      help = 'append boot entry for FILE (permanent, using BootOrder)',
-                      metavar = 'FILE')
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('Boot configuration')
+    pgroup.add_argument('--set-boot-uri', dest = 'set_boot_uri',
+                        help = 'set network boot uri to LINK (once, using BootNext)',
+                        metavar = 'LINK')
+    pgroup.add_argument('--append-boot-filepath', dest = 'append_boot_filepath',
+                        action = 'append', type = str,
+                        help = 'append boot entry for FILE (permanent, using BootOrder)',
+                        metavar = 'FILE')
 
-    pgroup = optparse.OptionGroup(parser, 'shim.efi configuration')
-    pgroup.add_option('--set-shim-debug', dest = 'set_shim_debug',
-                      action = 'store_true', default = False,
-                      help = 'enable shim.efi debugging (pause for debugger attach)')
-    pgroup.add_option('--set-shim-verbose', dest = 'set_shim_verbose',
-                      action = 'store_true', default = False,
-                      help = 'enable shim.efi verbose messages')
-    pgroup.add_option('--set-fallback-verbose', dest = 'set_fallback_verbose',
-                      action = 'store_true', default = False,
-                      help = 'enable fallback.efi verbose messages')
-    pgroup.add_option('--set-fallback-no-reboot', dest = 'set_fallback_no_reboot',
-                      action = 'store_true', default = False,
-                      help = 'disable rebooting for fallback.efi')
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('shim.efi configuration')
+    pgroup.add_argument('--set-shim-debug', dest = 'set_shim_debug',
+                        action = 'store_true', default = False,
+                        help = 'enable shim.efi debugging (pause for debugger attach)')
+    pgroup.add_argument('--set-shim-verbose', dest = 'set_shim_verbose',
+                        action = 'store_true', default = False,
+                        help = 'enable shim.efi verbose messages')
+    pgroup.add_argument('--set-fallback-verbose', dest = 'set_fallback_verbose',
+                        action = 'store_true', default = False,
+                        help = 'enable fallback.efi verbose messages')
+    pgroup.add_argument('--set-fallback-no-reboot', dest = 'set_fallback_no_reboot',
+                        action = 'store_true', default = False,
+                        help = 'disable rebooting for fallback.efi')
 
-    pgroup = optparse.OptionGroup(parser, 'Secure boot setup options')
-    pgroup.add_option('--set-pk', dest = 'pk',  nargs = 2,
-                      help = 'set PK to x509 cert, loaded in pem format ' +
-                      'from FILE and with owner GUID',
-                      metavar = ('GUID', 'FILE'))
-    pgroup.add_option('--add-kek', dest = 'kek',  action = 'append', nargs = 2,
-                      help = 'add x509 cert to KEK, loaded in pem format ' +
-                      'from FILE and with owner GUID, can be specified multiple times',
-                      metavar = ('GUID', 'FILE'))
-    pgroup.add_option('--add-db', dest = 'db',  action = 'append', nargs = 2,
-                      help = 'add x509 cert to db, loaded in pem format ' +
-                      'from FILE and with owner GUID, can be specified multiple times',
-                      metavar = ('GUID', 'FILE'))
-    pgroup.add_option('--set-dbx', dest = 'dbx',
-                      help = 'initialize dbx with update from FILE', metavar = 'FILE')
-    pgroup.add_option('--add-mok', dest = 'mok',  action = 'append', nargs = 2,
-                      help = 'add x509 cert to MokList, loaded in pem format ' +
-                      'from FILE and with owner GUID, can be specified multiple times',
-                      metavar = ('GUID', 'FILE'))
-    pgroup.add_option('--add-db-hash', dest = 'db_hash',  action = 'append', nargs = 2,
-                      help = 'add sha256 HASH to db, with owner GUID, ' +
-                      'can be specified multiple times',
-                      metavar = ('GUID', 'HASH'))
-    pgroup.add_option('--add-mok-hash', dest = 'mok_hash',  action = 'append', nargs = 2,
-                      help = 'add sha256 HASH to MokList, with owner GUID, ' +
-                      'can be specified multiple times',
-                      metavar = ('GUID', 'HASH'))
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('Secure boot setup options')
+    pgroup.add_argument('--set-pk', dest = 'pk',  nargs = 2,
+                        help = 'set PK to x509 cert, loaded in pem format ' +
+                        'from FILE and with owner GUID',
+                        metavar = ('GUID', 'FILE'))
+    pgroup.add_argument('--add-kek', dest = 'kek',  action = 'append', nargs = 2,
+                        help = 'add x509 cert to KEK, loaded in pem format ' +
+                        'from FILE and with owner GUID, can be specified multiple times',
+                        metavar = ('GUID', 'FILE'))
+    pgroup.add_argument('--add-db', dest = 'db',  action = 'append', nargs = 2,
+                        help = 'add x509 cert to db, loaded in pem format ' +
+                        'from FILE and with owner GUID, can be specified multiple times',
+                        metavar = ('GUID', 'FILE'))
+    pgroup.add_argument('--set-dbx', dest = 'dbx',
+                        help = 'initialize dbx with update from FILE', metavar = 'FILE')
+    pgroup.add_argument('--add-mok', dest = 'mok',  action = 'append', nargs = 2,
+                        help = 'add x509 cert to MokList, loaded in pem format ' +
+                        'from FILE and with owner GUID, can be specified multiple times',
+                        metavar = ('GUID', 'FILE'))
+    pgroup.add_argument('--add-db-hash', dest = 'db_hash',  action = 'append', nargs = 2,
+                        help = 'add sha256 HASH to db, with owner GUID, ' +
+                        'can be specified multiple times',
+                        metavar = ('GUID', 'HASH'))
+    pgroup.add_argument('--add-mok-hash', dest = 'mok_hash',  action = 'append', nargs = 2,
+                        help = 'add sha256 HASH to MokList, with owner GUID, ' +
+                        'can be specified multiple times',
+                        metavar = ('GUID', 'HASH'))
 
-    pgroup = optparse.OptionGroup(parser, 'Secure boot convinience shortcuts')
-    pgroup.add_option('--enroll-redhat', dest = 'redhat',
-                      action = 'store_true', default = False,
-                      help = 'enroll default certificates for redhat platform')
-    pgroup.add_option('--enroll-cert', dest = 'enroll_cert',
-                      help = 'enroll using specified certificate', metavar = "CERT")
-    pgroup.add_option('--enroll-generate', dest = 'enroll_generate',
-                      help = 'enroll using generated cert with given common name', metavar = "CN")
-    pgroup.add_option('--no-microsoft', dest = 'microsoft',
-                      action = 'store_false', default = True,
-                      help = 'do not add microsoft keys')
-    pgroup.add_option('--distro-keys', dest = 'distro', type = 'string', action = 'append',
-                      help = 'add ca keys for DISTRO', metavar = 'DISTRO')
-    pgroup.add_option('--sb', '--secure-boot', dest = 'secureboot',
-                      action = 'store_true', default = False,
-                      help = 'enable secure boot mode')
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('Secure boot convinience shortcuts')
+    pgroup.add_argument('--enroll-redhat', dest = 'redhat',
+                        action = 'store_true', default = False,
+                        help = 'enroll default certificates for redhat platform')
+    pgroup.add_argument('--enroll-cert', dest = 'enroll_cert',
+                        help = 'enroll using specified certificate', metavar = "CERT")
+    pgroup.add_argument('--enroll-generate', dest = 'enroll_generate',
+                        help = 'enroll using generated cert with given common name', metavar = "CN")
+    pgroup.add_argument('--no-microsoft', dest = 'microsoft',
+                        action = 'store_false', default = True,
+                        help = 'do not add microsoft keys')
+    pgroup.add_argument('--distro-keys', dest = 'distro', type = str, action = 'append',
+                        help = 'add ca keys for DISTRO', metavar = 'DISTRO')
+    pgroup.add_argument('--sb', '--secure-boot', dest = 'secureboot',
+                        action = 'store_true', default = False,
+                        help = 'enable secure boot mode')
 
-    pgroup = optparse.OptionGroup(parser, 'Print options')
-    pgroup.add_option('-p', '--print', dest = 'print',
-                      action = 'store_true', default = False,
-                      help = 'print varstore')
-    pgroup.add_option('-v', '--verbose', dest = 'verbose',
-                      action = 'store_true', default = False,
-                      help = 'print varstore verbosely')
-    pgroup.add_option('-x', '--hexdump', dest = 'hexdump',
-                      action = 'store_true', default = False,
-                      help = 'print variable hexdumps')
-    parser.add_option_group(pgroup)
+    pgroup = parser.add_argument_group('Print options')
+    pgroup.add_argument('-p', '--print', dest = 'print',
+                        action = 'store_true', default = False,
+                        help = 'print varstore')
+    pgroup.add_argument('-v', '--verbose', dest = 'verbose',
+                        action = 'store_true', default = False,
+                        help = 'print varstore verbosely')
+    pgroup.add_argument('-x', '--hexdump', dest = 'hexdump',
+                        action = 'store_true', default = False,
+                        help = 'print variable hexdumps')
 
-    pgroup = optparse.OptionGroup(parser, 'Output options')
-    pgroup.add_option('-o', '--output', dest = 'output', type = 'string',
-                      help = 'write edk2 or aws vars to FILE, using the same format '
-                      'the --input FILE has.', metavar = 'FILE')
-    pgroup.add_option('--output-aws', dest = 'output_aws', type = 'string',
-                      help = 'write aws vars to FILE', metavar = 'FILE')
-    pgroup.add_option('--output-json', dest = 'output_json', type = 'string',
-                      help = 'write json dump to FILE', metavar = 'FILE')
-    parser.add_option_group(pgroup)
-    (options, args) = parser.parse_args()
+    pgroup = parser.add_argument_group('Output options')
+    pgroup.add_argument('-o', '--output', dest = 'output', type = str,
+                        help = 'write edk2 or aws vars to FILE, using the same format '
+                        'the --input FILE has.', metavar = 'FILE')
+    pgroup.add_argument('--output-aws', dest = 'output_aws', type = str,
+                        help = 'write aws vars to FILE', metavar = 'FILE')
+    pgroup.add_argument('--output-json', dest = 'output_json', type = str,
+                        help = 'write json dump to FILE', metavar = 'FILE')
+    options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
