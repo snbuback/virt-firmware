@@ -99,7 +99,8 @@ class EfiVar:
                  attr = None,
                  data = b'',
                  count = 0,
-                 pkidx = 0):
+                 pkidx = 0,
+                 authdata = None):
         self.name = name
         self.guid = guid
         self.attr = attr
@@ -124,6 +125,9 @@ class EfiVar:
             else:
                 self.attr = EFI_VARIABLE_DEFAULT
 
+        if authdata:
+            self.parse_authdata(authdata)
+
         if str(self.name) in sigdb_names:
             self.sigdb = siglist.EfiSigDB(self.data)
 
@@ -137,6 +141,15 @@ class EfiVar:
                                           int(ns / 1000))
         else:
             self.time = None
+
+    def parse_authdata(self, authdata):
+        """ parse struct EFI_VARIABLE_AUTHENTICATION_2 """
+        self.parse_time(authdata, 0)
+        (length, revision, certtype) = struct.unpack_from("=LHH", authdata, 16)
+        guid = guids.parse_bin(authdata, 24)
+        if str(guid) != guids.EfiCertPkcs7:
+            raise RuntimeError('no pkcs7 signature')
+        self.data = authdata [ 16 + length : ]
 
     def bytes_time(self):
         """ generate struct EFI_TIME """
