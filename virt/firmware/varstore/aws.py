@@ -139,7 +139,7 @@ class AwsVarStore:
     @staticmethod
     def bytes_varlist(varlist):
         blob = struct.pack("=Q", len(varlist))
-        for (key, item) in varlist.items():
+        for (key, item) in sorted(varlist.items()):
             blob += AwsVarStore.bytes_var(item)
         return blob
 

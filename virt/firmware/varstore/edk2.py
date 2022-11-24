@@ -112,7 +112,7 @@ class Edk2VarStore:
 
     def bytes_varlist(self, varlist):
         blob = b''
-        for (key, item) in varlist.items():
+        for (key, item) in sorted(varlist.items()):
             blob += self.bytes_var(item)
         if len(blob) > self.end - self.start:
             logging.error("varstore is too small")
