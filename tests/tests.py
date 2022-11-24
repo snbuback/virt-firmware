@@ -15,6 +15,7 @@ VARS_SECBOOT = "/usr/share/OVMF/OVMF_VARS.secboot.fd"
 
 TEST_DATA    = os.path.join(os.path.dirname(__file__), "data")
 TEST_AWS     = os.path.join(TEST_DATA, 'secboot.aws')
+TEST_DBX     = os.path.join(TEST_DATA, 'DBXUpdate-20100307.x64.bin')
 
 class TestsEdk2(unittest.TestCase):
 
@@ -88,6 +89,11 @@ class TestsEdk2(unittest.TestCase):
         varlist.add_microsoft_keys()
         varlist.enable_secureboot()
         uefidata = aws.AwsVarStore.base64_varstore(varlist)
+
+    def test_parse_dbxupdate(self):
+        with open(TEST_DBX, 'rb') as f:
+            blob = f.read()
+        dbx = efivar.EfiVar('dbx', authdata = blob)
 
 if __name__ == '__main__':
     unittest.main()
