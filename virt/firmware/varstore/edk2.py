@@ -129,5 +129,6 @@ class Edk2VarStore:
 
     def write_varstore(self, filename, varlist):
         logging.info('writing edk2 varstore to %s', filename)
+        blob = self.bytes_varstore(varlist)
         with open(filename, "wb") as f:
-            f.write(self.bytes_varstore(varlist))
+            f.write(blob)

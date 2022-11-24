@@ -155,9 +155,9 @@ class AwsVarStore:
     @staticmethod
     def write_varstore(filename, varlist):
         logging.info('writing aws varstore to %s', filename)
-
+        blob = AwsVarStore.base64_varstore(varlist)
         with open(filename, "wb") as f:
-            f.write(AwsVarStore.base64_varstore(varlist))
+            f.write(blob)
 
 if __name__ == "__main__":
     logging.basicConfig(format = '%(levelname)s: %(message)s',
