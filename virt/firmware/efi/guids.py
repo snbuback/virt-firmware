@@ -45,6 +45,11 @@ name_table = {
     "9e21fd93-9c72-4c15-8c4b-e77f1db2d792" : "FvMainCompact",
     "df1ccef6-f301-4a63-9661-fc6030dcc880" : "SecMain",
 
+    "48db5e17-707c-472d-91cd-1613e7ef51b0" : "OvmfMainFv",
+    "6938079b-b503-4e3d-9d24-b28337a25806" : "OvmfPeiFv",
+    "7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1" : "OvmfDxeFv",
+    "763bed0d-de9f-48f5-81f1-3e90e1b1a015" : "OvmfSecFv",
+
     # variable types
     EfiGlobalVariable                      : "EfiGlobalVariable",
     EfiImageSecurityDatabase               : "EfiImageSecurityDatabase",

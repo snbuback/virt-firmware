@@ -1,8 +1,10 @@
 #!/usr/bin/python
 """ dump content of ovmf firmware volumes """
 import sys
+import json
 import lzma
 import struct
+import hashlib
 import optparse
 import collections
 
@@ -414,12 +416,14 @@ class Edk2Volume(Edk2CommonBase):
     def __init__(self, data = None, offset = 0):
         super().__init__()
         self.guid   = None
+        self.name   = None
         self.attr   = 0
         self.xoff   = 0
         self.rev    = 0
         self.blocks = 0
         self.bsize  = 0
         self.offset = offset
+        self.sha256 = None
         if data:
             self.parse(data)
 
@@ -428,6 +432,9 @@ class Edk2Volume(Edk2CommonBase):
          csum, self.xoff, self.rev, self.blocks, self.bsize) = \
             struct.unpack_from('<16x16sQLLHHHxBLL', data)
         self.guid = guids.parse_bin(guid, 0)
+        self.sha256 = hashlib.sha256(data [ 0 : self.tlen ])
+        if self.xoff:
+            self.name = guids.parse_bin(data, self.xoff)
 
         if self.is_ffs():
             self.parse_ffs(data [ self.hlen : self.tlen ])
@@ -455,11 +462,14 @@ class Edk2Volume(Edk2CommonBase):
         return str(self.guid) == guids.NvData
 
     def __str__(self):
-        return (f'volume={guids.name(self.guid)} '
-                f'offset=0x{self.offset:x} size=0x{self.tlen:x} '
-                f'hlen=0x{self.hlen:x} xoff=0x{self.xoff:x} '
-                f'rev={self.rev} blocks={self.blocks}*{self.bsize} '
-                f'used={self.used * 100 / self.tlen:.1f}%')
+        ret = (f'volume={guids.name(self.guid)} '
+               f'offset=0x{self.offset:x} size=0x{self.tlen:x} '
+               f'hlen=0x{self.hlen:x} xoff=0x{self.xoff:x} '
+               f'rev={self.rev} blocks={self.blocks}*{self.bsize} '
+               f'used={self.used * 100 / self.tlen:.1f}%')
+        if self.name:
+            ret += f' name={guids.name(self.name)}'
+        return ret
 
 
 class Edk2Capsule(Edk2CommonBase):
@@ -540,6 +550,20 @@ class Edk2Image(collections.UserList):
 ########################################################################
 # print stuff
 
+jsondata = []
+
+# pylint: disable=unused-argument
+def get_volume_hashes(item, indent):
+    if isinstance(item, (Edk2Volume,)) and item.sha256:
+        rec = {
+            'guid-type' : str(item.guid),
+            'sha256'    : item.sha256.hexdigest(),
+        }
+        if item.name:
+            rec['guid-name'] = str(item.name)
+        jsondata.append(rec)
+    return 0
+
 def print_all(item, indent):
     if indent == 0:
         # workaround for old python
@@ -593,6 +617,9 @@ def main():
     parser.add_option('--ovmf-meta', dest = 'fmt',
                       action = 'store_const', const = 'ovmf-meta',
                       help = 'decode ovmf metadata (in reset vector)')
+    parser.add_option('--volume-hashes', dest = 'fmt',
+                      action = 'store_const', const = 'volume-hashes',
+                      help = 'print volume hashes')
     (options, args) = parser.parse_args()
 
     if not options.input:
@@ -611,6 +638,9 @@ def main():
         print_tree(image, print_modules)
     elif options.fmt == 'ovmf-meta':
         print_tree(image, print_ovmf_meta)
+    elif options.fmt == 'volume-hashes':
+        print_tree(image, get_volume_hashes)
+        print(json.dumps(jsondata, indent = 4, sort_keys = True))
 
 if __name__ == '__main__':
     sys.exit(main())
