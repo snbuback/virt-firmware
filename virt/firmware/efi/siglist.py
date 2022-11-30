@@ -162,6 +162,15 @@ class EfiSigDB(collections.UserList):
         for siglist in list(self):
             siglist.extract_cert(prefix)
 
+    def get_cert_ts(self):
+        ts = None
+        for siglist in list(self):
+            if siglist.x509:
+                logging.info(siglist.x509.not_valid_before)
+                if ts is None or ts < siglist.x509.not_valid_before:
+                    ts = siglist.x509.not_valid_before
+        return ts
+
     def size(self):
         size = 0
         for siglist in list(self):

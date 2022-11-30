@@ -88,6 +88,8 @@ ascii_names = ('Lang', 'PlatformLang')
 blist_names = ('BootOrder', 'BootNext')
 dpath_names = ('ConIn', 'ConOut', 'ErrOut')
 
+initial_ts  = datetime.datetime(2010, 1, 1)
+
 ##################################################################################################
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes
@@ -161,24 +163,27 @@ class EfiVar:
                            self.time.microsecond * 1000,
                            0, 0)
 
-    def update_time(self):
+    def update_time(self, ts = None):
         if not self.attr & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS:
             return
-        self.time = datetime.datetime.now(datetime.timezone.utc)
+        if ts is None:
+            ts = datetime.datetime.now()
+        if self.time is None or self.time < ts:
+            self.time = ts
 
     def sigdb_clear(self):
         if self.sigdb is None:
             raise RuntimeError
         self.sigdb = siglist.EfiSigDB()
         self.data = bytes(self.sigdb)
-        self.update_time()
+        self.update_time(initial_ts)
 
     def sigdb_add_cert(self, guid, filename):
         if self.sigdb is None:
             raise RuntimeError
         self.sigdb.add_cert(guid, filename)
         self.data = bytes(self.sigdb)
-        self.update_time()
+        self.update_time(self.sigdb.get_cert_ts())
 
     def sigdb_add_hash(self, guid, hashdata):
         if self.sigdb is None:
@@ -192,7 +197,7 @@ class EfiVar:
             raise RuntimeError
         self.sigdb.add_dummy(guid)
         self.data = bytes(self.sigdb)
-        self.update_time()
+        self.update_time(initial_ts)
 
     def set_bool(self, value):
         if value:
