@@ -166,7 +166,6 @@ class EfiSigDB(collections.UserList):
         ts = None
         for siglist in list(self):
             if siglist.x509:
-                logging.info(siglist.x509.not_valid_before)
                 if ts is None or ts < siglist.x509.not_valid_before:
                     ts = siglist.x509.not_valid_before
         return ts
