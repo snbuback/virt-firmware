@@ -601,12 +601,11 @@ def get_volume_hashes(item, indent):
     return 0
 
 def get_image_data(image):
-    global jsonvols
-    jsonvols = []
+    jsonvols.clear()
     walk_tree(image, get_volume_hashes)
     rec = {
         'image'   : image.name,
-        'volumes' : jsonvols,
+        'volumes' : jsonvols.copy(),
     }
     jsonimgs.append(rec)
 
