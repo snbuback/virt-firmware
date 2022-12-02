@@ -16,4 +16,5 @@ set -ex
 virt-fw-dump --help
 for file in $images; do
     virt-fw-dump -i $file
+    virt-fw-dump -i $file --volume-hashes
 done
