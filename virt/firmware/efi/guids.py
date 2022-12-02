@@ -9,6 +9,9 @@ AuthVars                     = "aaf32c78-947b-439a-a180-2e144ec37792"
 LzmaCompress                 = "ee4e5898-3914-4259-9d6e-dc7bd79403cf"
 ResetVector                  = "1ba0062e-c779-4582-8566-336ae8f78f09"
 
+OvmfPeiFv                    = "6938079b-b503-4e3d-9d24-b28337a25806"
+OvmfDxeFv                    = "7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1"
+
 EfiGlobalVariable            = "8be4df61-93ca-11d2-aa0d-00e098032b8c"
 EfiImageSecurityDatabase     = "d719b2cb-3d3a-4596-a3bc-dad00e67656f"
 EfiSecureBootEnableDisable   = "f0a30bc7-af08-4556-99c4-001009c93a44"
@@ -46,8 +49,8 @@ name_table = {
     "df1ccef6-f301-4a63-9661-fc6030dcc880" : "SecMain",
 
     "48db5e17-707c-472d-91cd-1613e7ef51b0" : "OvmfMainFv",
-    "6938079b-b503-4e3d-9d24-b28337a25806" : "OvmfPeiFv",
-    "7cb8bdc9-f8eb-4f34-aaea-3ee4af6516a1" : "OvmfDxeFv",
+    OvmfPeiFv                              : "OvmfPeiFv",
+    OvmfDxeFv                              : "OvmfDxeFv",
     "763bed0d-de9f-48f5-81f1-3e90e1b1a015" : "OvmfSecFv",
 
     # variable types

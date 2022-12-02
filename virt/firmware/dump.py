@@ -550,20 +550,6 @@ class Edk2Image(collections.UserList):
 ########################################################################
 # print stuff
 
-jsondata = []
-
-# pylint: disable=unused-argument
-def get_volume_hashes(item, indent):
-    if isinstance(item, (Edk2Volume,)) and item.sha256:
-        rec = {
-            'guid-type' : str(item.guid),
-            'sha256'    : item.sha256.hexdigest(),
-        }
-        if item.name:
-            rec['guid-name'] = str(item.name)
-        jsondata.append(rec)
-    return 0
-
 def print_all(item, indent):
     if indent == 0:
         # workaround for old python
@@ -591,15 +577,41 @@ def print_ovmf_meta(item, indent):
         return print_all(item, indent)
     return 0
 
-def print_tree(item, pfunc, indent = 0):
-    inc = pfunc(item, indent)
-    if isinstance(item, collections.UserList):
-        for i in list(item):
-            print_tree(i, pfunc, indent + inc)
+
+########################################################################
+# get hashes (for pcr precalculation)
+
+jsondata = []
+
+# pylint: disable=unused-argument
+def get_volume_hashes(item, indent):
+    if isinstance(item, (Edk2Volume,)) and item.sha256:
+        rec = {
+            'guid-type' : str(item.guid),
+            'sha256'    : item.sha256.hexdigest(),
+        }
+        if item.name:
+            rec['guid-name'] = str(item.name)
+            if str(item.name) == guids.OvmfPeiFv:
+                rec['name'] = "PEIFV"
+            if str(item.name) == guids.OvmfDxeFv:
+                rec['name'] = "DXEFV"
+        jsondata.append(rec)
+    return 0
+
+def print_volume_hashes(image):
+    walk_tree(image, get_volume_hashes)
+    print(json.dumps(jsondata, indent = 4, sort_keys = True))
 
 
 ########################################################################
 # main
+
+def walk_tree(item, pfunc, indent = 0):
+    inc = pfunc(item, indent)
+    if isinstance(item, collections.UserList):
+        for i in list(item):
+            walk_tree(i, pfunc, indent + inc)
 
 def main():
     parser = optparse.OptionParser()
@@ -631,16 +643,15 @@ def main():
     image = Edk2Image(options.input, data)
 
     if options.fmt == 'all' or options.fmt is None:
-        print_tree(image, print_all)
+        walk_tree(image, print_all)
     elif options.fmt == 'volumes':
-        print_tree(image, print_volumes)
+        walk_tree(image, print_volumes)
     elif options.fmt == 'modules':
-        print_tree(image, print_modules)
+        walk_tree(image, print_modules)
     elif options.fmt == 'ovmf-meta':
-        print_tree(image, print_ovmf_meta)
+        walk_tree(image, print_ovmf_meta)
     elif options.fmt == 'volume-hashes':
-        print_tree(image, get_volume_hashes)
-        print(json.dumps(jsondata, indent = 4, sort_keys = True))
+        print_volume_hashes(image)
 
 if __name__ == '__main__':
     sys.exit(main())
