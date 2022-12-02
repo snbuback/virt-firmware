@@ -581,7 +581,8 @@ def print_ovmf_meta(item, indent):
 ########################################################################
 # get hashes (for pcr precalculation)
 
-jsondata = []
+jsonimgs = []
+jsonvols = []
 
 # pylint: disable=unused-argument
 def get_volume_hashes(item, indent):
@@ -596,12 +597,21 @@ def get_volume_hashes(item, indent):
                 rec['name'] = "PEIFV"
             if str(item.name) == guids.OvmfDxeFv:
                 rec['name'] = "DXEFV"
-        jsondata.append(rec)
+        jsonvols.append(rec)
     return 0
 
-def print_volume_hashes(image):
+def get_image_data(image):
+    global jsonvols
+    jsonvols = []
     walk_tree(image, get_volume_hashes)
-    print(json.dumps(jsondata, indent = 4, sort_keys = True))
+    rec = {
+        'image'   : image.name,
+        'volumes' : jsonvols,
+    }
+    jsonimgs.append(rec)
+
+def print_image_data():
+    print(json.dumps(jsonimgs, indent = 4, sort_keys = True))
 
 
 ########################################################################
@@ -615,7 +625,8 @@ def walk_tree(item, pfunc, indent = 0):
 
 def main():
     parser = optparse.OptionParser()
-    parser.add_option('-i', '--input', dest = 'input', type = 'string',
+    parser.add_option('-i', '--input', dest = 'input',
+                      action = 'append', type = 'string',
                       help = 'dump firmware volume FILE', metavar = 'FILE')
     parser.add_option('--all', dest = 'fmt',
                       action = 'store_const', const = 'all',
@@ -638,20 +649,24 @@ def main():
         print('ERROR: no input file specified (try -h for help)')
         sys.exit(1)
 
-    with open(options.input, 'rb') as f:
-        data = f.read()
-    image = Edk2Image(options.input, data)
+    for filename in options.input:
+        with open(filename, 'rb') as f:
+            data = f.read()
+        image = Edk2Image(filename, data)
 
-    if options.fmt == 'all' or options.fmt is None:
-        walk_tree(image, print_all)
-    elif options.fmt == 'volumes':
-        walk_tree(image, print_volumes)
-    elif options.fmt == 'modules':
-        walk_tree(image, print_modules)
-    elif options.fmt == 'ovmf-meta':
-        walk_tree(image, print_ovmf_meta)
-    elif options.fmt == 'volume-hashes':
-        print_volume_hashes(image)
+        if options.fmt == 'all' or options.fmt is None:
+            walk_tree(image, print_all)
+        elif options.fmt == 'volumes':
+            walk_tree(image, print_volumes)
+        elif options.fmt == 'modules':
+            walk_tree(image, print_modules)
+        elif options.fmt == 'ovmf-meta':
+            walk_tree(image, print_ovmf_meta)
+        elif options.fmt == 'volume-hashes':
+            get_image_data(image)
+
+    if options.fmt == 'volume-hashes':
+        print_image_data()
 
 if __name__ == '__main__':
     sys.exit(main())
