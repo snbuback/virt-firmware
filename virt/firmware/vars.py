@@ -69,6 +69,8 @@ def main():
                       help = 'add x509 cert to db, loaded in pem format ' +
                       'from FILE and with owner GUID, can be specified multiple times',
                       metavar = ('GUID', 'FILE'))
+    pgroup.add_option('--set-dbx', dest = 'dbx',
+                      help = 'initialize dbx with update from FILE', metavar = 'FILE')
     pgroup.add_option('--add-mok', dest = 'mok',  action = 'append', nargs = 2,
                       help = 'add x509 cert to MokList, loaded in pem format ' +
                       'from FILE and with owner GUID, can be specified multiple times',
@@ -203,6 +205,13 @@ def main():
     if options.db:
         for item in options.db:
             varlist.add_cert('db', item[0], item[1])
+
+    if options.dbx:
+        logging.info('reading dbx update from %s', options.dbx)
+        with open(options.dbx, 'rb') as f:
+            dbxupdate = f.read()
+        varlist['dbx'] = efivar.EfiVar(ucs16.from_string('dbx'),
+                                       authdata = dbxupdate)
 
     if options.mok:
         for item in options.mok:
