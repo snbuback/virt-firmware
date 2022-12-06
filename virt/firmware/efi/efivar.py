@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """ efi variables """
 
+import re
 import struct
 import logging
 import datetime
@@ -84,7 +85,7 @@ boot_defaults = {
 
 sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "TlsCaCertificate")
 bool_names  = ('SecureBootEnable', 'CustomMode')
-ascii_names = ('Lang', 'PlatformLang')
+ascii_names = ('Lang', 'PlatformLang', 'SbatLevel')
 blist_names = ('BootOrder', 'BootNext')
 dpath_names = ('ConIn', 'ConOut', 'ErrOut')
 
@@ -230,6 +231,7 @@ class EfiVar:
 
     def fmt_ascii(self):
         string = self.data.decode().rstrip('\0')
+        string = re.sub(r'\n', r'\\n', string)
         return f'ascii: "{string}"'
 
     def fmt_boot_entry(self):
