@@ -104,6 +104,10 @@ def main():
     pgroup.add_option('--enroll-redhat', dest = 'redhat',
                       action = 'store_true', default = False,
                       help = 'enroll default certificates for redhat platform')
+    pgroup.add_option('--enroll-cert', dest = 'enroll_cert',
+                      help = 'enroll using specified certificate', metavar = "CERT")
+    pgroup.add_option('--enroll-generate', dest = 'enroll_generate',
+                      help = 'enroll using generated cert with given common name', metavar = "CN")
     pgroup.add_option('--no-microsoft', dest = 'microsoft',
                       action = 'store_false', default = True,
                       help = 'do not add microsoft keys')
@@ -215,6 +219,16 @@ def main():
 
     if options.redhat:
         varlist.enroll_platform_redhat()
+        if options.microsoft:
+            varlist.add_microsoft_keys()
+
+    if options.enroll_cert:
+        varlist.enroll_platform_with_cert(options.enroll_cert)
+        if options.microsoft:
+            varlist.add_microsoft_keys()
+
+    if options.enroll_generate:
+        varlist.enroll_platform_generate(options.enroll_generate)
         if options.microsoft:
             varlist.add_microsoft_keys()
 

@@ -424,6 +424,10 @@ class EfiVarList(collections.UserDict):
     def enroll_platform_redhat(self):
         self.enroll_platform_with_cert(certs.REDHAT_PK)
 
+    def enroll_platform_generate(self, name):
+        pk = certs.pk_generate(cn = name)
+        self.enroll_platform_with_cert(pk.name)
+
     def add_microsoft_keys(self):
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_WIN, False)
         self.add_cert('db', guids.MicrosoftVendor, certs.MS_3RD, False)
