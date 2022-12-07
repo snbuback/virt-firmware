@@ -56,6 +56,21 @@ def main():
                       metavar = 'FILE')
     parser.add_option_group(pgroup)
 
+    pgroup = optparse.OptionGroup(parser, 'shim.efi configuration')
+    pgroup.add_option('--set-shim-debug', dest = 'set_shim_debug',
+                      action = 'store_true', default = False,
+                      help = 'enable shim.efi debugging (pause for debugger attach)')
+    pgroup.add_option('--set-shim-verbose', dest = 'set_shim_verbose',
+                      action = 'store_true', default = False,
+                      help = 'enable shim.efi verbose messages')
+    pgroup.add_option('--set-fallback-verbose', dest = 'set_fallback_verbose',
+                      action = 'store_true', default = False,
+                      help = 'enable fallback.efi verbose messages')
+    pgroup.add_option('--set-fallback-no-reboot', dest = 'set_fallback_no_reboot',
+                      action = 'store_true', default = False,
+                      help = 'disable rebooting for fallback.efi')
+    parser.add_option_group(pgroup)
+
     pgroup = optparse.OptionGroup(parser, 'Secure boot setup options')
     pgroup.add_option('--set-pk', dest = 'pk',  nargs = 2,
                       help = 'set PK to x509 cert, loaded in pem format ' +
@@ -178,6 +193,18 @@ def main():
             bpath = devpath.DevicePath.filepath(filepath)
             index = varlist.add_boot_entry(title, bpath, optdata)
             varlist.append_boot_order(index)
+
+    if options.set_shim_debug:
+        varlist.set_uint32('SHIM_DEBUG', 1)
+
+    if options.set_shim_verbose:
+        varlist.set_uint32('SHIM_VERBOSE', 1)
+
+    if options.set_fallback_verbose:
+        varlist.set_uint32('FALLBACK_VERBOSE', 1)
+
+    if options.set_fallback_no_reboot:
+        varlist.set_uint32('FB_NO_REBOOT', 1)
 
     if options.set_json:
         with open(options.set_json, "r", encoding = 'utf-8') as f:

@@ -74,6 +74,32 @@ efivar_defaults = {
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
         'guid' : guids.Shim,
     },
+    'MokListX' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
+    'SHIM_DEBUG' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
+    'SHIM_VERBOSE' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
+    'FALLBACK_VERBOSE' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
+    'FB_NO_REBOOT' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                  EFI_VARIABLE_RUNTIME_ACCESS),
+        'guid' : guids.Shim,
+    },
 }
 
 boot_defaults = {
@@ -83,7 +109,7 @@ boot_defaults = {
     'guid' : guids.EfiGlobalVariable,
 }
 
-sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "TlsCaCertificate")
+sigdb_names = ("PK", "KEK", "db", "dbx", "MokList", "MokListX", "TlsCaCertificate")
 bool_names  = ('SecureBootEnable', 'CustomMode')
 ascii_names = ('Lang', 'PlatformLang', 'SbatLevel')
 blist_names = ('BootOrder', 'BootNext')
@@ -207,6 +233,10 @@ class EfiVar:
             self.data = b'\x00'
         self.update_time()
 
+    def set_uint32(self, value):
+        self.data = value.to_bytes(4, byteorder = 'little')
+        self.update_time()
+
     def set_boot_entry(self, attr, title, path, optdata = None):
         pathdata = bytes(path)
         self.data = struct.pack('=LH', attr, len(pathdata))
@@ -308,6 +338,13 @@ class EfiVarList(collections.UserDict):
             var = self.create(name)
         logging.info('set variable %s: %s', name, value)
         var.set_bool(value)
+
+    def set_uint32(self, name, value):
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('set variable %s: %s', name, value)
+        var.set_uint32(value)
 
 
     def set_boot_entry(self, index, title, path, optdata = None):
