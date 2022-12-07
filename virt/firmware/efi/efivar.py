@@ -316,6 +316,7 @@ class EfiVar:
 
         return None
 
+# pylint: disable=too-many-public-methods
 class EfiVarList(collections.UserDict):
     """  class for efi variable list """
 

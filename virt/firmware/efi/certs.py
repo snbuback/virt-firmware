@@ -77,12 +77,8 @@ def pk_generate(cn = 'random secure boot platform',
         critical = False,
     ).sign(key, hashes.SHA256())
 
+    # pylint: disable=consider-using-with
     tf = tempfile.NamedTemporaryFile()
     tf.write(cert.public_bytes(serialization.Encoding.PEM))
     tf.flush()
     return tf
-
-# for testing
-if __name__ == '__main__':
-    tf = pk_generate()
-    print(tf.name)

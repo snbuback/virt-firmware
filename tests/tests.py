@@ -2,6 +2,7 @@ import os
 import json
 import unittest
 
+from virt.firmware.efi import certs
 from virt.firmware.efi import efivar
 from virt.firmware.efi import efijson
 from virt.firmware.efi import devpath
@@ -94,6 +95,9 @@ class TestsEdk2(unittest.TestCase):
         with open(TEST_DBX, 'rb') as f:
             blob = f.read()
         dbx = efivar.EfiVar('dbx', authdata = blob)
+
+    def test_generate_pk(self):
+        certs.pk_generate()
 
 if __name__ == '__main__':
     unittest.main()
