@@ -205,6 +205,11 @@ class EfiVar:
         self.data = bytes(self.sigdb)
         self.update_time(initial_ts)
 
+    def sigdb_set(self, sigdb):
+        self.sigdb = sigdb
+        self.data = bytes(self.sigdb)
+        self.update_time(self.sigdb.get_cert_ts())
+
     def sigdb_add_cert(self, guid, filename):
         if self.sigdb is None:
             raise RuntimeError
