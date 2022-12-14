@@ -40,7 +40,7 @@ def main():
         edk2store = edk2.Edk2VarStore(options.varstore)
         varlist = edk2store.get_varlist()
         logging.info('setting variable dbx')
-        varlist['dbx'] = dbx
+        varlist[str(dbx.name)] = dbx
         edk2store.write_varstore(options.varstore, varlist)
 
     return 0
