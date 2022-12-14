@@ -87,12 +87,12 @@ def measure_image(image):
     result = []
     peifv = find_volume(image, nameguid = guids.OvmfPeiFv)
     dxefv = find_volume(image, nameguid = guids.OvmfDxeFv)
-    vars  = find_volume(image, typeguid = guids.NvData)
+    varfv = find_volume(image, typeguid = guids.NvData)
     if peifv:
         result.append(measure_volume('PEIFV', peifv))
     if dxefv:
         result.append(measure_volume('DXEFV', dxefv))
-    if vars:
+    if varfv:
         edk2store = edk2.Edk2VarStore(image.name)
         varlist = edk2store.get_varlist()
         result += measure_varlist(varlist)
