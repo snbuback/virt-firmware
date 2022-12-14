@@ -20,7 +20,7 @@ default:
 	@echo "targets: lint install uninstall clean"
 
 lint pylint:
-	pylint $(PYLINT_OPTS) virt/firmware
+	pylint $(PYLINT_OPTS) virt/firmware virt/peutils experimental
 
 .PHONY: dist
 dist tarball $(PKG_TARBALL):
