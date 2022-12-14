@@ -55,13 +55,15 @@ def measure_varlist(varlist):
 ########################################################################
 # measure code
 
-def find_volume(item, guid):
+def find_volume(item, nameguid = None, typeguid = None):
     if isinstance(item, dump.Edk2Volume):
-        if item.name and str(item.name) == guid:
+        if nameguid and item.name and str(item.name) == nameguid:
+            return item
+        if typeguid and item.guid and str(item.guid) == typeguid:
             return item
     if isinstance(item, collections.UserList):
         for i in list(item):
-            r = find_volume(i, guid)
+            r = find_volume(i, nameguid, typeguid)
             if r:
                 return r
     return None
@@ -83,12 +85,17 @@ def measure_volume(name, vol):
 
 def measure_image(image):
     result = []
-    peifv = find_volume(image, guids.OvmfPeiFv)
-    dxefv = find_volume(image, guids.OvmfDxeFv)
+    peifv = find_volume(image, nameguid = guids.OvmfPeiFv)
+    dxefv = find_volume(image, nameguid = guids.OvmfDxeFv)
+    vars  = find_volume(image, typeguid = guids.NvData)
     if peifv:
         result.append(measure_volume('PEIFV', peifv))
     if dxefv:
         result.append(measure_volume('DXEFV', dxefv))
+    if vars:
+        edk2store = edk2.Edk2VarStore(image.name)
+        varlist = edk2store.get_varlist()
+        result += measure_varlist(varlist)
     return result
 
 
@@ -99,36 +106,34 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
-    parser.add_option('-i', '--input', dest = 'input', type = 'string',
-                      help = 'read edk2 or aws vars from FILE', metavar = 'FILE')
+    parser.add_option('--image', dest = 'image', type = 'string',
+                      help = 'read edk2 image from FILE', metavar = 'FILE')
+    parser.add_option('--vars', dest = 'vars', type = 'string',
+                      help = 'read edk2 vars from FILE', metavar = 'FILE')
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    if not options.input:
-        logging.error("no input file")
-        return 1
-
-    varlist = None
-    image = None
-    if edk2.Edk2VarStore.probe(options.input):
-        edk2store = edk2.Edk2VarStore(options.input)
-        varlist = edk2store.get_varlist()
-    elif aws.AwsVarStore.probe(options.input):
-        awsstore = aws.AwsVarStore(options.input)
-        varlist = awsstore.get_varlist()
-    else:
-        with open(options.input, 'rb') as f:
+    if options.image:
+        with open(options.image, 'rb') as f:
             data = f.read()
-        image = dump.Edk2Image(options.input, data)
-
-    if varlist:
-        result = measure_varlist(varlist)
-    if image:
+        image = dump.Edk2Image(options.image, data)
         result = measure_image(image)
+        print(json.dumps(result, indent = 4))
 
-    print(json.dumps(result, indent = 4))
+    elif options.vars:
+        if edk2.Edk2VarStore.probe(options.vars):
+            edk2store = edk2.Edk2VarStore(options.vars)
+            varlist = edk2store.get_varlist()
+        elif aws.AwsVarStore.probe(options.vars):
+            awsstore = aws.AwsVarStore(options.vars)
+            varlist = awsstore.get_varlist()
+        else:
+            logging.error("unknown input file format")
+            return 1
+        result = measure_varlist(varlist)
+        print(json.dumps(result, indent = 4))
 
     return 0
 
