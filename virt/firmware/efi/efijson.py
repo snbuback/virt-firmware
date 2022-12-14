@@ -1,5 +1,6 @@
 #!/usr/bin/python
 """ json support for efi """
+""" compatible with https://github.com/awslabs/python-uefivars """
 import json
 
 from virt.firmware.efi import guids
