@@ -8,9 +8,59 @@ import optparse
 import collections
 
 from virt.firmware import dump
+from virt.firmware.efi import ucs16
 from virt.firmware.efi import guids
+from virt.firmware.efi import efivar
 from virt.firmware.varstore import aws
 from virt.firmware.varstore import edk2
+
+
+########################################################################
+# pcr calculation
+
+class PCR:
+    """ tpm pcr register """
+
+    def __init__(self):
+        self.count = 0
+        self.banks = {
+            'sha256' : b'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
+        }
+
+    def extend_hash(self, bank, hashdata):
+        h = hashlib.new(bank)
+        h.update(self.banks[bank])
+        h.update(hashdata)
+        self.banks[bank] = h.digest()
+        self.count += 1
+
+    def value(self, bank):
+        return self.banks[bank]
+
+def calculate_pcr(index, bank, result):
+    pcr = PCR()
+    for item in result:
+        if item['PCRIndex'] != index:
+            continue
+        pcr.extend_hash(bank, bytes.fromhex(item['Digests'][bank]))
+
+    if pcr.count:
+        print(f'# pcr {index}, bank {bank}: {pcr.value(bank).hex()}')
+
+
+########################################################################
+# measure misc
+
+def measure_sep(index):
+    separator = b'\0\0\0\0'
+    result = {
+        'PCRIndex'   : index,
+        'EventType'  : 'EV_SEPARATOR',
+        'Digests'    : {
+            'sha256' : hashlib.sha256(separator).hexdigest(),
+        },
+    }
+    return result
 
 
 ########################################################################
@@ -43,12 +93,28 @@ def measure_var(var):
     }
     return result
 
-def measure_varlist(varlist):
+def measure_varlist(varlist, secureboot = True):
     result = []
+
+    sb = efivar.EfiVar(ucs16.from_string('SecureBoot'))
+    sb.set_bool(secureboot)
+    result.append(measure_var(sb))
+
     for name in ('PK', 'KEK', 'db', 'dbx'):
         var = varlist.get(name)
         if var:
             result.append(measure_var(var))
+
+    result.append(measure_sep(7))
+
+    var = varlist.get('SbatLevel')
+    if var:
+        result.append(measure_var(var))
+
+    sb = efivar.EfiVar(ucs16.from_string('MokListTrusted'))
+    sb.set_bool(True)
+    result.append(measure_var(sb))
+
     return result
 
 
@@ -114,13 +180,13 @@ def main():
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
+    result = []
 
     if options.image:
         with open(options.image, 'rb') as f:
             data = f.read()
         image = dump.Edk2Image(options.image, data)
         result = measure_image(image)
-        print(json.dumps(result, indent = 4))
 
     elif options.vars:
         if edk2.Edk2VarStore.probe(options.vars):
@@ -133,7 +199,10 @@ def main():
             logging.error("unknown input file format")
             return 1
         result = measure_varlist(varlist)
-        print(json.dumps(result, indent = 4))
+
+    print(json.dumps(result, indent = 4))
+    calculate_pcr(0, 'sha256', result)
+    calculate_pcr(7, 'sha256', result)
 
     return 0
 

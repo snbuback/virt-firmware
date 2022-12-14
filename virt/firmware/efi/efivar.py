@@ -31,6 +31,11 @@ EFI_VARIABLE_DEFAULT = (EFI_VARIABLE_NON_VOLATILE |
                         EFI_VARIABLE_BOOTSERVICE_ACCESS)
 
 efivar_defaults = {
+    'SecureBoot' : {
+        'attr' : (EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                  EFI_VARIABLE_RUNTIME_ACCESS),
+        'guid' : guids.EfiGlobalVariable,
+    },
     'SecureBootEnable' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
@@ -77,6 +82,11 @@ efivar_defaults = {
     'MokListX' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
+    'MokListTrusted' : {
+        'attr' : (EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                  EFI_VARIABLE_RUNTIME_ACCESS),
         'guid' : guids.Shim,
     },
     'SHIM_DEBUG' : {
