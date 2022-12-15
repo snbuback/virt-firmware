@@ -232,11 +232,6 @@ def main():
                       action = 'append', type = 'string',
                       help = 'pick tpm2 banks (sha1, sha256, sha384, sha512),'
                       ' specify multiple times to selecct more than one')
-    parser.add_option('--eventlog', '--event-log',
-                      dest = 'eventlog', action = 'store_true', default = False,
-                      help = 'include event log in output')
-    parser.add_option('--pcrs', dest = 'pcrs', action = 'store_true', default = False,
-                      help = 'include pcr values in output')
 
     (options, args) = parser.parse_args()
     logging.basicConfig(format = '%(levelname)s: %(message)s',
@@ -265,11 +260,10 @@ def main():
         eventlog = measure_varlist(options.banks, varlist,
                                    secureboot = options.secureboot)
 
-    result = []
-    if options.eventlog:
-        result += eventlog
-    if options.pcrs:
-        result += calculate_pcrs(options.banks, eventlog)
+    result = {
+        'EventLog' : eventlog,
+        'PCRs'     : calculate_pcrs(options.banks, eventlog),
+    }
     print(json.dumps(result, indent = 4))
 
     return 0
