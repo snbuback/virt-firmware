@@ -12,6 +12,7 @@ from virt.firmware.efi import ucs16
 
 from virt.firmware.varstore import edk2
 from virt.firmware.varstore import aws
+from virt.firmware.varstore import azure
 
 
 ##################################################################################################
@@ -130,6 +131,8 @@ def main():
                         'the --input FILE has.', metavar = 'FILE')
     pgroup.add_argument('--output-aws', dest = 'output_aws', type = str,
                         help = 'write aws vars to FILE', metavar = 'FILE')
+    pgroup.add_argument('--output-azure', dest = 'output_azure', type = str,
+                        help = 'write azure disk template to FILE', metavar = 'FILE')
     pgroup.add_argument('--output-json', dest = 'output_json', type = str,
                         help = 'write json dump to FILE', metavar = 'FILE')
     options = parser.parse_args()
@@ -139,6 +142,7 @@ def main():
 
     edk2store = None
     awsstore = None
+    azurestore = None
     varlist = efivar.EfiVarList()
 
     if options.input:
@@ -148,6 +152,9 @@ def main():
         elif aws.AwsVarStore.probe(options.input):
             awsstore = aws.AwsVarStore(options.input)
             varlist = awsstore.get_varlist()
+        elif azure.AzureDiskTemplate.probe(options.input):
+            azurestore = azure.AzureDiskTemplate(options.input)
+            varlist = azurestore.get_varlist()
         else:
             logging.error("unknown input file format")
             sys.exit(1)
@@ -273,6 +280,8 @@ def main():
             edk2store.write_varstore(options.output, varlist)
         elif awsstore:
             awsstore.write_varstore(options.output, varlist)
+        elif azurestore:
+            azurestore.write_varstore(options.output, varlist)
         else:
             logging.error("no input file specified (needed as edk2 varstore template)")
             sys.exit(1)
@@ -282,6 +291,13 @@ def main():
             print(aws.AwsVarStore.base64_varstore(varlist).decode())
         else:
             aws.AwsVarStore.write_varstore(options.output_aws, varlist)
+
+    if options.output_azure:
+        if options.output_azure == "-":
+            j = azure.AzureDiskTemplate.json_varstore(varlist)
+            print(json.dumps(j, indent = 4))
+        else:
+            azure.AzureDiskTemplate.write_varstore(options.output_azure, varlist)
 
     if options.output_json:
         j = json.dumps(varlist, cls=efijson.EfiJSONEncoder, indent = 4)
