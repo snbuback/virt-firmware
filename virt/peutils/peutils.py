@@ -57,6 +57,12 @@ def efi_binary(filename, extract = False, verbose = False):
     for sec in pe.sections:
         print(f'#    section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
               f' ({sec.Name.decode()})')
+        if sec.Name == b'.sbat\0\0\0':
+            sbat = pe.__data__[ sec.PointerToRawData :
+                                sec.PointerToRawData + sec.SizeOfRawData ]
+            entries = sbat.decode().rstrip('\n\0').split('\n')
+            for entry in entries:
+                print(f'#       {entry}')
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
         print(f'#    sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
