@@ -147,6 +147,16 @@ def measure_varlist(banks, varlist,
 ########################################################################
 # measure code
 
+def measure_version(banks, version):
+    ustr = ucs16.from_string(version)
+    result = {
+        'PCRIndex'   : 0,
+        'EventType'  : 'EV_S_CRTM_VERSION',
+        'Digests'    : hash_digest(banks, bytes(ustr)),
+        'Event'      : bytes(ustr).hex(),
+    }
+    return result
+
 def find_volume(item, nameguid = None, typeguid = None):
     if isinstance(item, dump.Edk2Volume):
         if nameguid and item.name and str(item.name) == nameguid:
@@ -173,19 +183,26 @@ def measure_volume(banks, name, vol):
     }
     return result
 
-def measure_image(banks, image):
+def measure_image(banks, image, version = None):
     result = []
     peifv = find_volume(image, nameguid = guids.OvmfPeiFv)
     dxefv = find_volume(image, nameguid = guids.OvmfDxeFv)
     varfv = find_volume(image, typeguid = guids.NvData)
+
+    if (peifv or dxefv) and version:
+        result.append(measure_version(banks, version))
     if peifv:
         result.append(measure_volume(banks, 'PEIFV', peifv))
     if dxefv:
         result.append(measure_volume(banks, 'DXEFV', dxefv))
+    if peifv or dxefv:
+        result.append(measure_sep(0, banks))
+
     if varfv:
         edk2store = edk2.Edk2VarStore(image.name)
         varlist = edk2store.get_varlist()
         result += measure_varlist(banks, varlist)
+
     return result
 
 
@@ -196,8 +213,12 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'warn',
                       help = 'set loglevel to LEVEL', metavar = 'LEVEL')
+
     parser.add_option('--image', dest = 'image', type = 'string',
                       help = 'read edk2 image from FILE', metavar = 'FILE')
+    parser.add_option('--version', dest = 'version', type = 'string',
+                      help = 'firmware version (PcdFirmwareVersionString)', metavar = 'VER')
+
     parser.add_option('--vars', dest = 'vars', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
     parser.add_option('--no-sb', '--no-secure-boot', dest = 'secureboot',
@@ -206,6 +227,7 @@ def main():
     parser.add_option('--no-shim', dest = 'shim',
                       action = 'store_false', default = True,
                       help = 'skip shim variable measurements')
+
     parser.add_option('--bank', dest = 'banks',
                       action = 'append', type = 'string',
                       help = 'pick tpm2 banks (sha1, sha256, sha384, sha512),'
@@ -215,8 +237,8 @@ def main():
                       help = 'include event log in output')
     parser.add_option('--pcrs', dest = 'pcrs', action = 'store_true', default = False,
                       help = 'include pcr values in output')
-    (options, args) = parser.parse_args()
 
+    (options, args) = parser.parse_args()
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
     eventlog = []
@@ -228,7 +250,7 @@ def main():
         with open(options.image, 'rb') as f:
             data = f.read()
         image = dump.Edk2Image(options.image, data)
-        eventlog = measure_image(options.banks, image)
+        eventlog = measure_image(options.banks, image, options.version)
 
     elif options.vars:
         if edk2.Edk2VarStore.probe(options.vars):
