@@ -423,7 +423,7 @@ class Edk2Volume(Edk2CommonBase):
         self.blocks = 0
         self.bsize  = 0
         self.offset = offset
-        self.sha256 = None
+        self.blob   = None
         if data:
             self.parse(data)
 
@@ -432,7 +432,7 @@ class Edk2Volume(Edk2CommonBase):
          csum, self.xoff, self.rev, self.blocks, self.bsize) = \
             struct.unpack_from('<16x16sQLLHHHxBLL', data)
         self.guid = guids.parse_bin(guid, 0)
-        self.sha256 = hashlib.sha256(data [ 0 : self.tlen ])
+        self.blob = data [ 0 : self.tlen ]
         if self.xoff:
             self.name = guids.parse_bin(data, self.xoff)
 
@@ -586,10 +586,10 @@ jsonvols = []
 
 # pylint: disable=unused-argument
 def get_volume_hashes(item, indent):
-    if isinstance(item, (Edk2Volume,)) and item.sha256:
+    if isinstance(item, (Edk2Volume,)) and item.blob:
         rec = {
             'guid-type' : str(item.guid),
-            'sha256'    : item.sha256.hexdigest(),
+            'sha256'    : hashlib.sha256(item.blob).hexdigest(),
         }
         if item.name:
             rec['guid-name'] = str(item.name)
