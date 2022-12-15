@@ -201,14 +201,20 @@ def main():
     parser.add_option('--vars', dest = 'vars', type = 'string',
                       help = 'read edk2 vars from FILE', metavar = 'FILE')
     parser.add_option('--no-sb', '--no-secure-boot', dest = 'secureboot',
-                      action = 'store_false', default = True)
+                      action = 'store_false', default = True,
+                      help = 'assume secure boot is disabled')
     parser.add_option('--no-shim', dest = 'shim',
-                      action = 'store_false', default = True)
+                      action = 'store_false', default = True,
+                      help = 'skip shim variable measurements')
     parser.add_option('--bank', dest = 'banks',
-                      action = 'append', type = 'string')
+                      action = 'append', type = 'string',
+                      help = 'pick tpm2 banks (sha1, sha256, sha384, sha512),'
+                      ' specify multiple times to selecct more than one')
     parser.add_option('--eventlog', '--event-log',
-                      dest = 'eventlog', action = 'store_true', default = False)
-    parser.add_option('--pcrs', dest = 'pcrs', action = 'store_true', default = False)
+                      dest = 'eventlog', action = 'store_true', default = False,
+                      help = 'include event log in output')
+    parser.add_option('--pcrs', dest = 'pcrs', action = 'store_true', default = False,
+                      help = 'include pcr values in output')
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
