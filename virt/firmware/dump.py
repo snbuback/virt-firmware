@@ -5,7 +5,7 @@ import json
 import lzma
 import struct
 import hashlib
-import optparse
+import argparse
 import collections
 
 from virt.firmware.efi import guids
@@ -623,26 +623,26 @@ def walk_tree(item, pfunc, indent = 0):
             walk_tree(i, pfunc, indent + inc)
 
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option('-i', '--input', dest = 'input',
-                      action = 'append', type = 'string',
-                      help = 'dump firmware volume FILE', metavar = 'FILE')
-    parser.add_option('--all', dest = 'fmt',
-                      action = 'store_const', const = 'all',
-                      help = 'print everything (default)')
-    parser.add_option('--volumes', dest = 'fmt',
-                      action = 'store_const', const = 'volumes',
-                      help = 'print firmware volumes')
-    parser.add_option('--modules', dest = 'fmt',
-                      action = 'store_const', const = 'modules',
-                      help = 'print included modules')
-    parser.add_option('--ovmf-meta', dest = 'fmt',
-                      action = 'store_const', const = 'ovmf-meta',
-                      help = 'decode ovmf metadata (in reset vector)')
-    parser.add_option('--volume-hashes', dest = 'fmt',
-                      action = 'store_const', const = 'volume-hashes',
-                      help = 'print volume hashes')
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', dest = 'input',
+                        action = 'append', type = str,
+                        help = 'dump firmware volume FILE', metavar = 'FILE')
+    parser.add_argument('--all', dest = 'fmt',
+                        action = 'store_const', const = 'all',
+                        help = 'print everything (default)')
+    parser.add_argument('--volumes', dest = 'fmt',
+                        action = 'store_const', const = 'volumes',
+                        help = 'print firmware volumes')
+    parser.add_argument('--modules', dest = 'fmt',
+                        action = 'store_const', const = 'modules',
+                        help = 'print included modules')
+    parser.add_argument('--ovmf-meta', dest = 'fmt',
+                        action = 'store_const', const = 'ovmf-meta',
+                        help = 'decode ovmf metadata (in reset vector)')
+    parser.add_argument('--volume-hashes', dest = 'fmt',
+                        action = 'store_const', const = 'volume-hashes',
+                        help = 'print volume hashes')
+    options = parser.parse_args()
 
     if not options.input:
         print('ERROR: no input file specified (try -h for help)')

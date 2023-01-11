@@ -2,7 +2,7 @@
 """ pe (efi) binary utilities """
 import sys
 import struct
-import optparse
+import argparse
 
 import pefile
 
@@ -135,41 +135,45 @@ def efi_addsig(infile, outfile, sigfiles, replace = False):
                 f.write(addsigs)
 
 def pe_dumpinfo():
-    parser = optparse.OptionParser()
-    (options, args) = parser.parse_args()
-    for filename in args:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("FILES", nargs='*',
+                        help="List of PE files to dump")
+    options = parser.parse_args()
+    for filename in options.FILES:
         print(f'# file: {filename}')
         pe = pefile.PE(filename)
         print(pe.dump_info())
     return 0
 
 def pe_listsigs():
-    parser = optparse.OptionParser()
-    parser.add_option('-x', '--extract', dest = 'extract',
-                      action = 'store_true', default = False,
-                      help = 'also extract signatures and certificates')
-    parser.add_option('-v', '--verbose', dest = 'verbose',
-                      action = 'store_true', default = False,
-                      help = 'print more certificate details')
-    (options, args) = parser.parse_args()
-    for filename in args:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-x', '--extract', dest = 'extract',
+                        action = 'store_true', default = False,
+                        help = 'also extract signatures and certificates')
+    parser.add_argument('-v', '--verbose', dest = 'verbose',
+                        action = 'store_true', default = False,
+                        help = 'print more certificate details')
+    parser.add_argument("FILES", nargs='*',
+                        help="List of PE files to dump")
+    options = parser.parse_args()
+    for filename in options.FILES:
         efi_binary(filename, options.extract, options.verbose)
     return 0
 
 def pe_addsigs():
-    parser = optparse.OptionParser()
-    parser.add_option('-i', '--input', dest = 'infile', type = 'string',
-                      help = 'read efi binary from FILE', metavar = 'FILE')
-    parser.add_option('-o', '--output', dest = 'outfile', type = 'string',
-                      help = 'write efi binary to FILE', metavar = 'FILE')
-    parser.add_option('-s', '--addsig', dest = 'addsigs',
-                      type = 'string', action = 'append',
-                      help = 'append  detached signature from FILE',
-                      metavar = 'FILE')
-    parser.add_option('--replace', dest = 'replace',
-                      action = 'store_true', default = False,
-                      help = 'replace existing signatures')
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', dest = 'infile', type = str,
+                        help = 'read efi binary from FILE', metavar = 'FILE')
+    parser.add_argument('-o', '--output', dest = 'outfile', type = str,
+                        help = 'write efi binary to FILE', metavar = 'FILE')
+    parser.add_argument('-s', '--addsig', dest = 'addsigs',
+                        type = str, action = 'append',
+                        help = 'append  detached signature from FILE',
+                        metavar = 'FILE')
+    parser.add_argument('--replace', dest = 'replace',
+                        action = 'store_true', default = False,
+                        help = 'replace existing signatures')
+    options = parser.parse_args()
 
     if not options.infile:
         print('missing input file (try --help)')

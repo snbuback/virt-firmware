@@ -2,23 +2,23 @@
 """ handle dbx updates -- EXPERIMENTAL """
 import sys
 import logging
-import optparse
+import argparse
 
 from virt.firmware.efi import ucs16
 from virt.firmware.efi import efivar
 from virt.firmware.varstore import edk2
 
 def main():
-    parser = optparse.OptionParser()
-    parser.add_option('-l', '--loglevel', dest = 'loglevel', type = 'string', default = 'info',
-                      help = 'set loglevel to LEVEL', metavar = 'LEVEL')
-    parser.add_option('-u', '--update', dest = 'update', type = 'string',
-                      help = 'read dbx update from FILE', metavar = 'FILE')
-    parser.add_option('-p', '--print', dest = 'print', action = 'store_true', default = False,
-                      help = 'print dbx update content')
-    parser.add_option('--vars', '--varstore', dest = 'varstore', type = 'string',
-                      help = 'update edk2 varstore FILE inplace', metavar = 'FILE')
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
+                        help = 'set loglevel to LEVEL', metavar = 'LEVEL')
+    parser.add_argument('-u', '--update', dest = 'update', type = str,
+                        help = 'read dbx update from FILE', metavar = 'FILE')
+    parser.add_argument('-p', '--print', dest = 'print', action = 'store_true', default = False,
+                        help = 'print dbx update content')
+    parser.add_argument('--vars', '--varstore', dest = 'varstore', type = str,
+                        help = 'update edk2 varstore FILE inplace', metavar = 'FILE')
+    options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
