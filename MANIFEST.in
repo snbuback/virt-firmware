@@ -1,0 +1,4 @@
+# include tests in dist tarball
+graft tests
+global-exclude *~
+global-exclude *.py[cod]
