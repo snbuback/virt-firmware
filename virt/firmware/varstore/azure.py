@@ -77,7 +77,8 @@ class AzureDiskTemplate:
             if guid and attr and value:
                 var = efivar.EfiVar(ucs16.from_string(name),
                                     guid = guids.parse_bin(base64.b64decode(guid), 0),
-                                    attr = int.from_bytes(base64.b64decode(attr), byteorder='little'),
+                                    attr = int.from_bytes(base64.b64decode(attr),
+                                                          byteorder='little'),
                                     data = base64.b64decode(value))
                 varlist[str(var.name)] = var
         return varlist
