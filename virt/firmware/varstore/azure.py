@@ -108,7 +108,7 @@ class AzureDiskTemplate:
         }
 
     @staticmethod
-    def json_varstore(varlist):
+    def json_uefisettings(varlist):
         sigs = {}
         us = {}
         for (name, var) in varlist.items():
@@ -123,6 +123,11 @@ class AzureDiskTemplate:
         if len(sigs):
             us['signatureMode'] = 'Replace'
             us['signatures'] = sigs
+        return us
+
+    @staticmethod
+    def json_varstore(varlist):
+        us = AzureDiskTemplate.json_uefisettings(varlist)
         ret = {
             'type' : 'Microsoft.Compute/disks',
             'properties' : {
