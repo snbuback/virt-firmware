@@ -21,7 +21,7 @@ def is_ca_cert(cert):
     try:
         bc = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
     except x509.extensions.ExtensionNotFound:
-        bc = False;
+        bc = False
     if bc:
         return bc.value.ca
     return False
