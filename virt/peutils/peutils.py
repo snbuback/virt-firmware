@@ -18,7 +18,10 @@ def common_name(item):
         return 'no CN'
 
 def is_ca_cert(cert):
-    bc = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
+    try:
+        bc = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
+    except x509.extensions.ExtensionNotFound:
+        bc = False;
     if bc:
         return bc.value.ca
     return False
