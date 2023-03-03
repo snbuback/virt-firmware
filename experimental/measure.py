@@ -118,7 +118,7 @@ def measure_var(banks, var, cfg):
 
 def measure_varlist(banks, varlist,
                     secureboot = True,
-                    shim = True):
+                    shim = False):
     result = []
 
     sb = efivar.EfiVar(ucs16.from_string('SecureBoot'))
@@ -224,9 +224,12 @@ def main():
     parser.add_option('--no-sb', '--no-secure-boot', dest = 'secureboot',
                       action = 'store_false', default = True,
                       help = 'assume secure boot is disabled')
+    parser.add_option('--shim', dest = 'shim',
+                      action = 'store_true', default = False,
+                      help = 'enable shim variable measurements')
     parser.add_option('--no-shim', dest = 'shim',
-                      action = 'store_false', default = True,
-                      help = 'skip shim variable measurements')
+                      action = 'store_false',
+                      help = 'disable shim variable measurements')
 
     parser.add_option('--bank', dest = 'banks',
                       action = 'append', type = 'string',
@@ -258,7 +261,8 @@ def main():
             logging.error("unknown input file format")
             return 1
         eventlog = measure_varlist(options.banks, varlist,
-                                   secureboot = options.secureboot)
+                                   secureboot = options.secureboot,
+                                   shim = options.shim)
 
     result = {
         'EventLog' : eventlog,
