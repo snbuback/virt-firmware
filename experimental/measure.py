@@ -116,6 +116,18 @@ def measure_var(banks, var, cfg):
     }
     return result
 
+def measure_varlist_shim(banks, varlist):
+    result = []
+
+    var = varlist.get('SbatLevel')
+    if var:
+        result.append(measure_var(banks, var, False))
+
+    sb = efivar.EfiVar(ucs16.from_string('MokListTrusted'))
+    sb.set_bool(True)
+    result.append(measure_var(banks, sb, False))
+    return result
+
 def measure_varlist(banks, varlist,
                     secureboot = True,
                     shim = False):
@@ -133,13 +145,7 @@ def measure_varlist(banks, varlist,
     result.append(measure_sep(7, banks))
 
     if shim:
-        var = varlist.get('SbatLevel')
-        if var:
-            result.append(measure_var(banks, var, False))
-
-        sb = efivar.EfiVar(ucs16.from_string('MokListTrusted'))
-        sb.set_bool(True)
-        result.append(measure_var(banks, sb, False))
+        result += measure_varlist_shim(banks, varlist)
 
     return result
 
