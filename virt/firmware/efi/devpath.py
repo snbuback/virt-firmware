@@ -77,6 +77,10 @@ class DevicePathElem:
         if self.subtype == 0x12:
             (port, mul, lun) = struct.unpack_from('=HHH', self.data)
             return f'SATA(port={port})'
+        if self.subtype == 0x13:
+            (proto,login,lun,tag) = struct.unpack_from('=HHQH', self.data)
+            target = self.data[ 14: ].decode()
+            return f'ISCSI({target})'
         if self.subtype == 0x18:
             return f'URI({self.data.decode()})'
         if self.subtype == 0x1f:
