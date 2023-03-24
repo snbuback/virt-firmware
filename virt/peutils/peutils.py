@@ -27,6 +27,7 @@ def is_ca_cert(cert):
     return False
 
 def print_cert(cert, verbose = False):
+    print('#          certificate')
     if verbose:
         print(f'#             subject: {cert.subject.rfc4514_string()}')
         print(f'#             issuer : {cert.issuer.rfc4514_string()}')
@@ -41,7 +42,6 @@ def print_cert(cert, verbose = False):
 def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
-        print('#          certificate')
         print_cert(cert, verbose)
 
         if extract:
@@ -87,12 +87,12 @@ def efi_binary(filename, extract = False, verbose = False):
                                  sec.PointerToRawData + sec.SizeOfRawData ]
             (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
             if dbs:
-                print(f'#        db: {dbo} +{dbs}')
+                print(f'#       db: {dbo} +{dbs}')
                 db = vcert [ dbo : dbo + dbs ]
                 crt = x509.load_der_x509_certificate(db)
                 print_cert(crt, verbose)
             if dbxs:
-                print(f'#        dbx: {dbxo} +{dbxs}')
+                print(f'#       dbx: {dbxo} +{dbxs}')
                 dbx = vcert [ dbxo : dbxo + dbxs ]
                 crt = x509.load_der_x509_certificate(dbx)
                 print_cert(crt, verbose)
