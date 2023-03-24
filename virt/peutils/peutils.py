@@ -26,26 +26,23 @@ def is_ca_cert(cert):
         return bc.value.ca
     return False
 
-def print_cert_short(cert):
-    scn = common_name(cert.subject)
-    icn = common_name(cert.issuer)
-    print(f'#             subject CN: {scn}')
-    print(f'#             issuer  CN: {icn}')
-
-def print_cert_long(cert):
-    print(f'#             subject: {cert.subject.rfc4514_string()}')
-    print(f'#             issuer : {cert.issuer.rfc4514_string()}')
-    print(f'#             valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
-    print(f'#             CA     : {is_ca_cert(cert)}')
+def print_cert(cert, verbose = False):
+    if verbose:
+        print(f'#             subject: {cert.subject.rfc4514_string()}')
+        print(f'#             issuer : {cert.issuer.rfc4514_string()}')
+        print(f'#             valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
+        print(f'#             CA     : {is_ca_cert(cert)}')
+    else:
+        scn = common_name(cert.subject)
+        icn = common_name(cert.issuer)
+        print(f'#             subject CN: {scn}')
+        print(f'#             issuer  CN: {icn}')
 
 def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
         print('#          certificate')
-        if verbose:
-            print_cert_long(cert)
-        else:
-            print_cert_short(cert)
+        print_cert(cert, verbose)
 
         if extract:
             scn = common_name(cert.subject)
@@ -85,6 +82,20 @@ def efi_binary(filename, extract = False, verbose = False):
             entries = sbat.decode().rstrip('\n\0').split('\n')
             for entry in entries:
                 print(f'#       {entry}')
+        if sec.Name == b'.vendor_cert':
+            vcert = pe.__data__[ sec.PointerToRawData :
+                                 sec.PointerToRawData + sec.SizeOfRawData ]
+            (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
+            if dbs:
+                print(f'#        db: {dbo} +{dbs}')
+                db = vcert [ dbo : dbo + dbs ]
+                crt = x509.load_der_x509_certificate(db)
+                print_cert(crt, verbose)
+            if dbxs:
+                print(f'#        dbx: {dbxo} +{dbxs}')
+                dbx = vcert [ dbxo : dbxo + dbxs ]
+                crt = x509.load_der_x509_certificate(dbx)
+                print_cert(crt, verbose)
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
         print(f'#    sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
