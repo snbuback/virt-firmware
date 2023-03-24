@@ -57,7 +57,7 @@ def print_vendor_cert(db, verbose = False):
         if str(sl.guid) == guids.EfiCertX509:
             print_cert(sl.x509, verbose)
         elif str(sl.guid) == guids.EfiCertSha256:
-            print(f'#          sha256')
+            print('#          sha256')
             print(f'#             {len(sl)} entries')
         else:
             print(f'#          {sl.guid}')
