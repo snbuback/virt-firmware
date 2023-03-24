@@ -54,10 +54,29 @@ def sig_type2(data, extract = False, verbose = False):
             with open(fn, 'wb') as f:
                 f.write(cert.public_bytes(serialization.Encoding.PEM))
 
+def getcstr(data):
+    """ get C string (terminated by null byte) """
+    idx = 0
+    for b in data:
+        if b == 0:
+            break
+        idx += 1
+    return data[:idx]
+
+def pe_string(pe, index):
+    """ lookup string in string table (right after symbol table) """
+    strtab  = pe.FILE_HEADER.PointerToSymbolTable
+    strtab += pe.FILE_HEADER.NumberOfSymbols * 18
+    strtab += index
+    return getcstr(pe.__data__[strtab:])
+
 def efi_binary(filename, extract = False, verbose = False):
     print(f'# file: {filename}')
     pe = pefile.PE(filename)
     for sec in pe.sections:
+        if sec.Name.startswith(b'/'):
+            idx = getcstr(sec.Name[1:])
+            sec.Name = pe_string(pe, int(idx))
         print(f'#    section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
               f' ({sec.Name.decode()})')
         if sec.Name == b'.sbat\0\0\0':
