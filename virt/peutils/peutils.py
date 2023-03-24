@@ -10,6 +10,9 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
 
+from virt.firmware.efi import guids
+from virt.firmware.efi import siglist
+
 def common_name(item):
     try:
         scn = item.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
@@ -38,6 +41,26 @@ def print_cert(cert, verbose = False):
         icn = common_name(cert.issuer)
         print(f'#             subject CN: {scn}')
         print(f'#             issuer  CN: {icn}')
+
+def print_vendor_cert(db, verbose = False):
+    # VENDOR_CERT_FILE
+    try:
+        crt = x509.load_der_x509_certificate(db)
+        print_cert(crt, verbose)
+        return
+    except ValueError:
+        pass
+
+    # VENDOR_DB_FILE
+    sigdb = siglist.EfiSigDB(db)
+    for sl in sigdb:
+        if str(sl.guid) == guids.EfiCertX509:
+            print_cert(sl.x509, verbose)
+        elif str(sl.guid) == guids.EfiCertSha256:
+            print(f'#          sha256')
+            print(f'#             {len(sl)} entries')
+        else:
+            print(f'#          {sl.guid}')
 
 def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
@@ -89,13 +112,11 @@ def efi_binary(filename, extract = False, verbose = False):
             if dbs:
                 print(f'#       db: {dbo} +{dbs}')
                 db = vcert [ dbo : dbo + dbs ]
-                crt = x509.load_der_x509_certificate(db)
-                print_cert(crt, verbose)
+                print_vendor_cert(db, verbose)
             if dbxs:
                 print(f'#       dbx: {dbxo} +{dbxs}')
                 dbx = vcert [ dbxo : dbxo + dbxs ]
-                crt = x509.load_der_x509_certificate(dbx)
-                print_cert(crt, verbose)
+                print_vendor_cert(dbx, verbose)
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
         print(f'#    sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
