@@ -40,6 +40,7 @@ test-centos8:
   stage: test
   image: quay.io/centos/centos:stream8
   before_script:
+    - dnf install -y 'dnf-command(config-manager)'
     - dnf config-manager --set-enabled powertools
     - *instscript
   script:
