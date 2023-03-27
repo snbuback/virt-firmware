@@ -295,7 +295,7 @@ class EfiVar:
         bootlist = []
         for pos in range(len(self.data) >> 1):
             nr = struct.unpack_from('=H', self.data, pos * 2)
-            bootlist.append(f'{nr[0]:04d}')
+            bootlist.append(f'{nr[0]:04x}')
             desc= ", ".join(bootlist)
         return f'boot order: {desc}'
 
