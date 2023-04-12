@@ -7,6 +7,7 @@ import argparse
 import pefile
 
 from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
 
@@ -45,7 +46,7 @@ def print_cert(cert, verbose = False):
 def print_vendor_cert(db, verbose = False):
     # VENDOR_CERT_FILE
     try:
-        crt = x509.load_der_x509_certificate(db)
+        crt = x509.load_der_x509_certificate(db, default_backend())
         print_cert(crt, verbose)
         return
     except ValueError:
@@ -63,7 +64,7 @@ def print_vendor_cert(db, verbose = False):
             print(f'#          {sl.guid}')
 
 def sig_type2(data, extract = False, verbose = False):
-    certs = pkcs7.load_der_pkcs7_certificates(data)
+    certs = pkcs7.load_der_pkcs7_certificates(data, default_backend())
     for cert in certs:
         print_cert(cert, verbose)
 

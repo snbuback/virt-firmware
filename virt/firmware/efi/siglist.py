@@ -8,6 +8,7 @@ import logging
 import collections
 
 from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 from virt.firmware.efi import guids
@@ -49,7 +50,7 @@ class EfiSigList(collections.UserList):
                 raise RuntimeError('x509 signature list not empty')
             if self.x509 is None:
                 try:
-                    self.x509 = x509.load_der_x509_certificate(data)
+                    self.x509 = x509.load_der_x509_certificate(data, default_backend())
                 except ValueError:
                     logging.error("x509: failed to load certificate")
                     self.x509 = None
@@ -65,9 +66,9 @@ class EfiSigList(collections.UserList):
         with open(filename, "rb") as f:
             pem = f.read()
         if b'-----BEGIN' in pem:
-            self.x509 = x509.load_pem_x509_certificate(pem)
+            self.x509 = x509.load_pem_x509_certificate(pem, default_backend())
         else:
-            self.x509 = x509.load_der_x509_certificate(pem)
+            self.x509 = x509.load_der_x509_certificate(pem, default_backend())
         data = self.x509.public_bytes(serialization.Encoding.DER)
         self.add_sig(guid, data)
 
