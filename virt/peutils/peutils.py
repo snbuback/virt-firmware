@@ -64,7 +64,7 @@ def print_vendor_cert(db, verbose = False):
             print(f'#          {sl.guid}')
 
 def sig_type2(data, extract = False, verbose = False):
-    certs = pkcs7.load_der_pkcs7_certificates(data, default_backend())
+    certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
         print_cert(cert, verbose)
 
