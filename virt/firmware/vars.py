@@ -145,6 +145,9 @@ def main():
         if edk2.Edk2VarStore.probe(options.input):
             edk2store = edk2.Edk2VarStore(options.input)
             varlist = edk2store.get_varlist()
+        elif edk2.Edk2VarStoreQcow2.probe(options.input):
+            edk2store = edk2.Edk2VarStoreQcow2(options.input)
+            varlist = edk2store.get_varlist()
         elif aws.AwsVarStore.probe(options.input):
             awsstore = aws.AwsVarStore(options.input)
             varlist = awsstore.get_varlist()

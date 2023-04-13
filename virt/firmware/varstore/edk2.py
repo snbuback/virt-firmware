@@ -3,13 +3,15 @@
 import sys
 import struct
 import logging
+import tempfile
+import subprocess
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
 from virt.firmware.efi import efivar
 
 class Edk2VarStore:
-    """  class for edk2 efi varstore """
+    """  class for edk2 efi varstore, raw image """
 
     def __init__(self, filename):
         self.filename = filename
@@ -30,7 +32,7 @@ class Edk2VarStore:
         return True
 
     def readfile(self):
-        logging.info('reading edk2 varstore from %s', self.filename)
+        logging.info('reading raw edk2 varstore from %s', self.filename)
         with open(self.filename, "rb") as f:
             self.filedata = f.read()
 
@@ -128,7 +130,42 @@ class Edk2VarStore:
         return blob
 
     def write_varstore(self, filename, varlist):
-        logging.info('writing edk2 varstore to %s', filename)
+        logging.info('writing raw edk2 varstore to %s', filename)
         blob = self.bytes_varstore(varlist)
         with open(filename, "wb") as f:
             f.write(blob)
+
+class Edk2VarStoreQcow2(Edk2VarStore):
+    """  class for edk2 efi varstore, qcow2 image """
+
+    @staticmethod
+    def probe(filename):
+        with open(filename, "rb") as f:
+            header = f.read(64)
+        (magic, version, boff, bsize, mtime, size) = struct.unpack_from('>LLQLLQ', header)
+        if magic != 0x514649fb:
+            return False
+        if size > 1024 * 1024 * 256:
+            return False
+        return True
+
+    def readfile(self):
+        logging.info('reading qcow2 edk2 varstore from %s', self.filename)
+        rawfile = tempfile.NamedTemporaryFile()
+        cmdline = [ 'qemu-img', 'convert',
+                    '-f', 'qcow2', '-O', 'raw',
+                    self.filename, rawfile.name ]
+        subprocess.run(cmdline, check = True)
+        self.filedata = rawfile.read()
+
+    def write_varstore(self, filename, varlist):
+        logging.info('writing qcow2 edk2 varstore to %s', filename)
+        blob = self.bytes_varstore(varlist)
+        rawfile = tempfile.NamedTemporaryFile()
+        rawfile.write(blob)
+        rawfile.flush()
+        cmdline = [ 'qemu-img', 'convert',
+                    '-f', 'raw', '-O', 'qcow2',
+                    '-o', 'cluster_size=4096', '-S', '4096',
+                    rawfile.name, filename ]
+        subprocess.run(cmdline, check = True)
