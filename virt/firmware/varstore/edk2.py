@@ -151,21 +151,21 @@ class Edk2VarStoreQcow2(Edk2VarStore):
 
     def readfile(self):
         logging.info('reading qcow2 edk2 varstore from %s', self.filename)
-        rawfile = tempfile.NamedTemporaryFile()
-        cmdline = [ 'qemu-img', 'convert',
-                    '-f', 'qcow2', '-O', 'raw',
-                    self.filename, rawfile.name ]
-        subprocess.run(cmdline, check = True)
-        self.filedata = rawfile.read()
+        with tempfile.NamedTemporaryFile() as rawfile:
+            cmdline = [ 'qemu-img', 'convert',
+                        '-f', 'qcow2', '-O', 'raw',
+                        self.filename, rawfile.name ]
+            subprocess.run(cmdline, check = True)
+            self.filedata = rawfile.read()
 
     def write_varstore(self, filename, varlist):
         logging.info('writing qcow2 edk2 varstore to %s', filename)
         blob = self.bytes_varstore(varlist)
-        rawfile = tempfile.NamedTemporaryFile()
-        rawfile.write(blob)
-        rawfile.flush()
-        cmdline = [ 'qemu-img', 'convert',
-                    '-f', 'raw', '-O', 'qcow2',
-                    '-o', 'cluster_size=4096', '-S', '4096',
-                    rawfile.name, filename ]
-        subprocess.run(cmdline, check = True)
+        with tempfile.NamedTemporaryFile() as rawfile:
+            rawfile.write(blob)
+            rawfile.flush()
+            cmdline = [ 'qemu-img', 'convert',
+                        '-f', 'raw', '-O', 'qcow2',
+                        '-o', 'cluster_size=4096', '-S', '4096',
+                        rawfile.name, filename ]
+            subprocess.run(cmdline, check = True)
