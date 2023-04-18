@@ -63,6 +63,12 @@ def print_vendor_cert(db, verbose = False):
         else:
             print(f'#          {sl.guid}')
 
+def print_sbat_entries(name, data):
+    print(f'#       {name}')
+    entries = data.decode().rstrip('\n').split('\n')
+    for entry in entries:
+        print(f'#           {entry}')
+
 def sig_type2(data, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
@@ -129,6 +135,12 @@ def efi_binary(filename, extract = False, verbose = False):
                 print(f'#       dbx: {dbxo} +{dbxs}')
                 dbx = vcert [ dbxo : dbxo + dbxs ]
                 print_vendor_cert(dbx, verbose)
+        if sec.Name == b'.sbatlevel':
+            levels = sec.get_data()
+            (version, poff, loff) = struct.unpack_from('<III', levels)
+            print_sbat_entries('previous', getcstr(levels[poff + 4:]))
+            print_sbat_entries('latest', getcstr(levels[loff + 4:]))
+
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
         print(f'#    sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
