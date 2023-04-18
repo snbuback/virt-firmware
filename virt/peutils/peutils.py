@@ -91,6 +91,18 @@ def pe_string(pe, index):
     strtab += index
     return getcstr(pe.__data__[strtab:])
 
+def pe_section_flags(sec):
+    r = '-'
+    w = '-'
+    x = '-'
+    if sec.Characteristics & pefile.SECTION_CHARACTERISTICS['IMAGE_SCN_MEM_READ']:
+        r = 'r'
+    if sec.Characteristics & pefile.SECTION_CHARACTERISTICS['IMAGE_SCN_MEM_WRITE']:
+        w = 'w'
+    if sec.Characteristics & pefile.SECTION_CHARACTERISTICS['IMAGE_SCN_MEM_EXECUTE']:
+        x = 'x'
+    return r + w + x
+
 def efi_binary(filename, extract = False, verbose = False):
     print(f'# file: {filename}')
     pe = pefile.PE(filename)
@@ -99,16 +111,15 @@ def efi_binary(filename, extract = False, verbose = False):
             idx = getcstr(sec.Name[1:])
             sec.Name = pe_string(pe, int(idx))
         print(f'#    section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
+              f' {pe_section_flags(sec)}'
               f' ({sec.Name.decode()})')
         if sec.Name == b'.sbat\0\0\0':
-            sbat = pe.__data__[ sec.PointerToRawData :
-                                sec.PointerToRawData + sec.SizeOfRawData ]
+            sbat = sec.get_data()
             entries = sbat.decode().rstrip('\n\0').split('\n')
             for entry in entries:
                 print(f'#       {entry}')
         if sec.Name == b'.vendor_cert':
-            vcert = pe.__data__[ sec.PointerToRawData :
-                                 sec.PointerToRawData + sec.SizeOfRawData ]
+            vcert = sec.get_data()
             (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
             if dbs:
                 print(f'#       db: {dbo} +{dbs}')
