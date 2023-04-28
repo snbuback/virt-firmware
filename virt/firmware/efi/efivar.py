@@ -11,9 +11,10 @@ from cryptography import x509
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
+from virt.firmware.efi import certs
 from virt.firmware.efi import devpath
 from virt.firmware.efi import siglist
-from virt.firmware.efi import certs
+from virt.firmware.efi import bootentry
 
 ##################################################################################################
 # constants
@@ -253,12 +254,9 @@ class EfiVar:
         self.update_time()
 
     def set_boot_entry(self, attr, title, path, optdata = None):
-        pathdata = bytes(path)
-        self.data = struct.pack('=LH', attr, len(pathdata))
-        self.data += bytes(title)
-        self.data += pathdata
-        if optdata:
-            self.data += optdata
+        entry = bootentry.BootEntry(attr = attr, title = title,
+                                    devicepath = path, optdata = optdata)
+        self.data = bytes(entry)
         self.update_time()
 
     def set_boot_next(self, index):
@@ -280,16 +278,8 @@ class EfiVar:
         return f'ascii: "{string}"'
 
     def fmt_boot_entry(self):
-        (attr, pathsize) = struct.unpack_from('=LH', self.data)
-        name = ucs16.from_ucs16(self.data, 6)
-        path = self.data[ name.size() + 6 :
-                          name.size() + 6 + pathsize ]
-        optdata = self.data[ name.size() + 6 + pathsize : ]
-        obj = devpath.DevicePath(path)
-        string = f'boot entry: name="{name}" devpath={obj}'
-        if len(optdata):
-            string += f' optdata={optdata.hex()}'
-        return string
+        entry = bootentry.BootEntry(data = self.data)
+        return f'boot entry: {entry}'
 
     def fmt_boot_list(self):
         bootlist = []
@@ -370,7 +360,8 @@ class EfiVarList(collections.UserDict):
             var = self.create(name)
         t = ucs16.from_string(title)
         logging.info('set variable %s: %s = %s', name, t, path)
-        var.set_boot_entry(1, t, path, optdata)
+        var.set_boot_entry(bootentry.LOAD_OPTION_ACTIVE,
+                           t, path, optdata)
 
     def add_boot_entry(self, title, path, optdata = None):
         for index in range(0xffff):
