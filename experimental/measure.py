@@ -253,12 +253,16 @@ def main():
     if options.image:
         with open(options.image, 'rb') as f:
             data = f.read()
+        data = dump.unqcow2(options.image, data)
         image = dump.Edk2Image(options.image, data)
         eventlog = measure_image(options.banks, image, options.version)
 
     elif options.vars:
         if edk2.Edk2VarStore.probe(options.vars):
             edk2store = edk2.Edk2VarStore(options.vars)
+            varlist = edk2store.get_varlist()
+        elif edk2.Edk2VarStoreQcow2.probe(options.vars):
+            edk2store = edk2.Edk2VarStoreQcow2(options.vars)
             varlist = edk2store.get_varlist()
         elif aws.AwsVarStore.probe(options.vars):
             awsstore = aws.AwsVarStore(options.vars)
