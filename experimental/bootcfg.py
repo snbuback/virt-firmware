@@ -1,4 +1,6 @@
 #/usr/bin/python3
+# pylint: disable=consider-iterating-dictionary
+""" experimental efi boot config tool """
 import sys
 import struct
 import logging
@@ -7,12 +9,18 @@ import argparse
 from virt.firmware.efi import guids
 from virt.firmware.efi import bootentry
 
+from virt.firmware.varstore import aws
+from virt.firmware.varstore import edk2
 from virt.firmware.varstore import linux
 
 
 class EfiBootConfig:
+    """ efi boot configuration """
 
     def __init__(self):
+        self.bootorder   = None
+        self.bootcurrent = None
+        self.bootnext    = None
         self.bcurr = None  # parsed BootCurrent
         self.bnext = None  # parsed BootNext
         self.blist = []    # parsed BootOrder
@@ -39,8 +47,11 @@ class EfiBootConfig:
         cstr = 'C' if nr == self.bcurr else ' '
         nstr = 'N' if nr == self.bnext else ' '
         ostr = 'O' if nr in self.blist else ' '
+        if not entry:
+            print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  [ missing ]')
+            return
         print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  {entry.title}')
-        
+
     def print_cfg(self):
         print('# C - BootCurrent, N - BootNext, O - BootOrder')
         print('# --------------------------------------------')
@@ -53,6 +64,7 @@ class EfiBootConfig:
 
 
 class LinuxEfiBootConfig(EfiBootConfig):
+    """ read efi boot configuration from linux sysfs """
 
     def __init__(self):
         super().__init__()
@@ -69,21 +81,58 @@ class LinuxEfiBootConfig(EfiBootConfig):
         self.parse_boot_variables()
         for nr in self.bentr.keys():
             var = self.linux_read_variable(f'Boot{nr:04x}')
-            self.bentr[nr] = bootentry.BootEntry(data = var.data)
+            if var:
+                self.bentr[nr] = bootentry.BootEntry(data = var.data)
+
+
+class VarStoreEfiBootConfig(EfiBootConfig):
+    """ read efi boot configuration from varstore  """
+
+    def __init__(self, filename):
+        super().__init__()
+        self.varstore = None
+        self.varlist  = None
+        self.varstore_init(filename)
+
+    def varstore_init(self, filename):
+        if edk2.Edk2VarStore.probe(filename):
+            self.varstore = edk2.Edk2VarStore(filename)
+        elif edk2.Edk2VarStoreQcow2.probe(filename):
+            self.varstore = edk2.Edk2VarStoreQcow2(filename)
+        elif aws.AwsVarStore.probe(filename):
+            self.varstore = aws.AwsVarStore(filename)
+        else:
+            return
+
+        self.varlist = self.varstore.get_varlist()
+        self.bootcurrent = None
+        self.bootorder = self.varlist.get('BootOrder')
+        self.bootnext = self.varlist.get('BootNext')
+        self.parse_boot_variables()
+        for nr in self.bentr.keys():
+            var = self.varlist.get(f'Boot{nr:04x}')
+            if var:
+                self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
                         help = 'set loglevel to LEVEL', metavar = 'LEVEL')
+    parser.add_argument('--vars', dest = 'vars', type = str,
+                        help = 'read edk2 vars from FILE', metavar = 'FILE')
     options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    bootcfg = LinuxEfiBootConfig()
-    bootcfg.print_cfg()
+    if options.vars:
+        bootcfg = VarStoreEfiBootConfig(options.vars)
+    else:
+        bootcfg = LinuxEfiBootConfig()
 
+    bootcfg.print_cfg()
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
