@@ -6,6 +6,8 @@ import lzma
 import struct
 import hashlib
 import argparse
+import tempfile
+import subprocess
 import collections
 
 from virt.firmware.efi import guids
@@ -616,6 +618,18 @@ def print_image_data():
 ########################################################################
 # main
 
+def unqcow2(filename, data):
+    (magic, version) = struct.unpack_from('>LL', data)
+    if magic != 0x514649fb:
+        return data
+    with tempfile.NamedTemporaryFile() as rawfile:
+        cmdline = [ 'qemu-img', 'convert',
+                    '-f', 'qcow2', '-O', 'raw',
+                    filename, rawfile.name ]
+        subprocess.run(cmdline, check = True)
+        filedata = rawfile.read()
+    return filedata
+
 def walk_tree(item, pfunc, indent = 0):
     inc = pfunc(item, indent)
     if isinstance(item, collections.UserList):
@@ -651,6 +665,7 @@ def main():
     for filename in options.input:
         with open(filename, 'rb') as f:
             data = f.read()
+        data = unqcow2(filename, data)
         image = Edk2Image(filename, data)
 
         if options.fmt == 'all' or options.fmt is None:
