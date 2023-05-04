@@ -7,6 +7,7 @@ import logging
 import argparse
 
 from virt.firmware.efi import guids
+from virt.firmware.efi import ucs16
 from virt.firmware.efi import bootentry
 
 from virt.firmware.varstore import aws
@@ -42,7 +43,7 @@ class EfiBootConfig:
             self.bnext = nr[0]
             self.bentr[nr[0]] = None
 
-    def print_entry(self, nr):
+    def print_entry(self, nr, verbose):
         entry = self.bentr[nr]
         cstr = 'C' if nr == self.bcurr else ' '
         nstr = 'N' if nr == self.bnext else ' '
@@ -51,16 +52,22 @@ class EfiBootConfig:
             print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  [ missing ]')
             return
         print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  {entry.title}')
+        if verbose:
+            prefix = '#                    ->'
+            print(f'{prefix} devpath: {entry.devicepath}')
+            if entry.optdata:
+                print(f'{prefix} optdata/hex: {entry.optdata.hex()}')
+                print(f'{prefix} optdata/str: {ucs16.from_ucs16(entry.optdata, 0)}')
 
-    def print_cfg(self):
+    def print_cfg(self, verbose = False):
         print('# C - BootCurrent, N - BootNext, O - BootOrder')
         print('# --------------------------------------------')
         if self.bcurr and not self.bcurr in self.blist:
-            self.print_entry(self.bcurr)
+            self.print_entry(self.bcurr, verbose)
         if self.bnext and not self.bnext in self.blist and self.bcurr != self.bnext:
-            self.print_entry(self.bnext)
+            self.print_entry(self.bnext, verbose)
         for nr in self.blist:
-            self.print_entry(nr)
+            self.print_entry(nr, verbose)
 
 
 class LinuxEfiBootConfig(EfiBootConfig):
@@ -119,19 +126,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
                         help = 'set loglevel to LEVEL', metavar = 'LEVEL')
-    parser.add_argument('--vars', dest = 'vars', type = str,
+    parser.add_argument('--vars', dest = 'varsfile', type = str,
                         help = 'read edk2 vars from FILE', metavar = 'FILE')
+    parser.add_argument('-v', '--verbose', dest = 'verbose',
+                        action = 'store_true', default = False,
+                        help = 'print more details')
     options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    if options.vars:
-        bootcfg = VarStoreEfiBootConfig(options.vars)
+    if options.varsfile:
+        bootcfg = VarStoreEfiBootConfig(options.varsfile)
     else:
         bootcfg = LinuxEfiBootConfig()
 
-    bootcfg.print_cfg()
+    bootcfg.print_cfg(options.verbose)
     return 0
 
 if __name__ == '__main__':
