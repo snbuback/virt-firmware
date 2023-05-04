@@ -89,7 +89,7 @@ class LinuxEfiBootConfig(EfiBootConfig):
         self.bootnext = self.linux_read_variable('BootNext')
         self.parse_boot_variables()
         for nr in self.bentr.keys():
-            var = self.linux_read_variable(f'Boot{nr:04x}')
+            var = self.linux_read_variable(f'Boot{nr:04X}')
             if var:
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
@@ -119,7 +119,7 @@ class VarStoreEfiBootConfig(EfiBootConfig):
         self.bootnext = self.varlist.get('BootNext')
         self.parse_boot_variables()
         for nr in self.bentr.keys():
-            var = self.varlist.get(f'Boot{nr:04x}')
+            var = self.varlist.get(f'Boot{nr:04X}')
             if var:
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
