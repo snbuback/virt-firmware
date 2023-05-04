@@ -43,6 +43,15 @@ class EfiBootConfig:
             self.bnext = nr[0]
             self.bentr[nr[0]] = None
 
+    @staticmethod
+    def print_optdata(prefix, optdata):
+        if len(optdata) >= 4 and optdata[0] != 0 and optdata[1] == 0:
+            print(f'{prefix} opt/ucs16: {ucs16.from_ucs16(optdata, 0)}')
+        elif len(optdata) == 16:
+            print(f'{prefix} opt/guid: {guids.parse_bin(optdata, 0)}')
+        else:
+            print(f'{prefix} opt/hex: {optdata.hex()}')
+
     def print_entry(self, nr, verbose):
         entry = self.bentr[nr]
         cstr = 'C' if nr == self.bcurr else ' '
@@ -54,14 +63,10 @@ class EfiBootConfig:
         print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  {entry.title}')
         if verbose:
             prefix = '#                    ->'
-            print(f'{prefix} devpath: {entry.devicepath}')
+            print(f'{prefix} path: {entry.devicepath}')
             if entry.optdata:
-                if len(entry.optdata) >= 4 and entry.optdata[0] != 0 and entry.optdata[1] == 0:
-                    print(f'{prefix} optdata/ucs16: {ucs16.from_ucs16(entry.optdata, 0)}')
-                elif len(entry.optdata) == 16:
-                    print(f'{prefix} optdata/guid: {guids.parse_bin(entry.optdata, 0)}')
-                else:
-                    print(f'{prefix} optdata/hex: {entry.optdata.hex()}')
+                self.print_optdata(prefix, entry.optdata)
+            print('#')
 
     def print_cfg(self, verbose = False):
         print('# C - BootCurrent, N - BootNext, O - BootOrder')
