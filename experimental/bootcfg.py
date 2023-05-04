@@ -56,8 +56,10 @@ class EfiBootConfig:
             prefix = '#                    ->'
             print(f'{prefix} devpath: {entry.devicepath}')
             if entry.optdata:
-                print(f'{prefix} optdata/hex: {entry.optdata.hex()}')
-                print(f'{prefix} optdata/str: {ucs16.from_ucs16(entry.optdata, 0)}')
+                if len(entry.optdata) >= 4 and entry.optdata[0] != 0 and entry.optdata[1] == 0:
+                    print(f'{prefix} optdata/ucs16: {ucs16.from_ucs16(entry.optdata, 0)}')
+                else:
+                    print(f'{prefix} optdata/hex: {entry.optdata.hex()}')
 
     def print_cfg(self, verbose = False):
         print('# C - BootCurrent, N - BootNext, O - BootOrder')
