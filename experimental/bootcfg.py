@@ -39,7 +39,7 @@ class EfiBootConfig:
             self.bcurr = nr[0]
             self.bentr[nr[0]] = None
         if self.bootnext:
-            nr = struct.unpack_from('=H', self.bootcurrent.data)
+            nr = struct.unpack_from('=H', self.bootnext.data)
             self.bnext = nr[0]
             self.bentr[nr[0]] = None
 
