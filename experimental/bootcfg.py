@@ -58,6 +58,8 @@ class EfiBootConfig:
             if entry.optdata:
                 if len(entry.optdata) >= 4 and entry.optdata[0] != 0 and entry.optdata[1] == 0:
                     print(f'{prefix} optdata/ucs16: {ucs16.from_ucs16(entry.optdata, 0)}')
+                elif len(entry.optdata) == 16:
+                    print(f'{prefix} optdata/guid: {guids.parse_bin(entry.optdata, 0)}')
                 else:
                     print(f'{prefix} optdata/hex: {entry.optdata.hex()}')
 
