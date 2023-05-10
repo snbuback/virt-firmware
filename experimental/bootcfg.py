@@ -10,6 +10,7 @@ import subprocess
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
+from virt.firmware.efi import efivar
 from virt.firmware.efi import devpath
 from virt.firmware.efi import bootentry
 
@@ -96,6 +97,27 @@ class EfiBootConfig:
         for nr in self.unused:
             self.print_entry(nr, verbose)
 
+    def find_uki_entry(self, uki):
+        for (nr, entry) in self.bentr.items():
+            if not entry.optdata:
+                continue
+            optpath = str(ucs16.from_ucs16(entry.optdata, 0))
+            if optpath == uki:
+                return nr
+        return None
+
+    def find_unused_entry(self):
+        nr = 0;
+        while nr in self.bentr:
+            nr += 1
+        return nr
+
+    def add_entry(self, entry):
+        nr = self.find_unused_entry()
+        self.bentr[nr] = entry
+        self.unused.append(nr)
+        return nr
+
 
 class LinuxEfiBootConfig(EfiBootConfig):
     """ read efi boot configuration from linux sysfs """
@@ -108,6 +130,15 @@ class LinuxEfiBootConfig(EfiBootConfig):
     def linux_read_variable(self, name):
         return self.varstore.get_variable(name, guids.EfiGlobalVariable)
 
+    def linux_wite_variable(self, var):
+        self.varstore.set_variable(var)
+
+    def linux_write_entry(self, nr):
+        var = efivar.EfiVar(ucs16.from_string(f'Boot{nr:04X}'),
+                            guid = guids.parse_str(guids.EfiGlobalVariable),
+                            data = bytes(self.bentr[nr]))
+        self.varstore.set_variable(var)
+
     def linux_init(self):
         self.varstore = linux.LinuxVarStore()
         self.bootorder = self.linux_read_variable('BootOrder')
@@ -119,6 +150,7 @@ class LinuxEfiBootConfig(EfiBootConfig):
             var = self.linux_read_variable(f'Boot{nr:04X}')
             if var:
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
+
 
 
 class LinuxBlockDev:
@@ -158,7 +190,8 @@ class LinuxBlockDev:
 
     def efi_filename(self, filename):
         if not filename.startswith(self.mount):
-            raise RuntimeError(f'{filename} is not on {self.mount}')
+            logging.error('%s is not on %s', filename, self.mount)
+            sys.exit(1)
         return filename[ len(self.mount) : ].replace('/', '\\')
 
     def dev_path_elem_file(self, filename):
@@ -169,7 +202,8 @@ class LinuxBlockDev:
     def dev_path_elem_gpt(self):
         elem = devpath.DevicePathElem()
         if self.udevenv['ID_PART_ENTRY_SCHEME'] != 'gpt':
-            raise RuntimeError('partition table is not gpt')
+            logging.error('partition table is not gpt')
+            sys.exit(1)
         elem.set_gpt(int(self.udevenv['ID_PART_ENTRY_NUMBER']),
                      int(self.udevenv['ID_PART_ENTRY_OFFSET']),
                      int(self.udevenv['ID_PART_ENTRY_SIZE']),
@@ -219,21 +253,68 @@ def esp_path():
                             stdout = subprocess.PIPE, check = True)
     return result.stdout.decode().strip('\n')
 
+def add_uki(bootcfg, esp, options):
+    if not options.shim:
+        logging.error('shim binary not specified')
+        sys.exit(1)
+    if not options.title:
+        logging.error('entry title not specified')
+        sys.exit(1)
+
+    efiuki  = esp.efi_filename(options.adduki)
+    nr = bootcfg.find_uki_entry(efiuki)
+    if nr:
+        logging.info('Entry exists (Boot%04X)', nr)
+    else:
+        devpath = esp.dev_path_file(options.shim)
+        optdata = ucs16.from_string(efiuki)
+        entry = bootentry.BootEntry(title = ucs16.from_string(options.title),
+                                    attr = bootentry.LOAD_OPTION_ACTIVE,
+                                    devicepath = devpath,
+                                    optdata = bytes(optdata))
+        logging.info('Create new entry: %s', str(entry))
+        nr = bootcfg.add_entry(entry)
+        logging.info('Added entry (Boot%04X)', nr)
+        if not options.dryrun:
+            bootcfg.linux_write_entry(nr)
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description = 'show and manage uefi boot entries')
+
     parser.add_argument('-l', '--loglevel', dest = 'loglevel', type = str, default = 'info',
                         help = 'set loglevel to LEVEL', metavar = 'LEVEL')
     parser.add_argument('--vars', dest = 'varsfile', type = str,
                         help = 'read edk2 vars from FILE', metavar = 'FILE')
+    parser.add_argument('--show', dest = 'show',
+                        action = 'store_true', default = False,
+                        help = 'print boot configuration')
     parser.add_argument('-v', '--verbose', dest = 'verbose',
                         action = 'store_true', default = False,
                         help = 'print more details')
+
+    group = parser.add_argument_group('update unified kernel image (UKI) boot entries')
+    group.add_argument('--dry-run', dest = 'dryrun',
+                       action = 'store_true', default = False,
+                       help = 'do not actually update the configuration')
+    group.add_argument('--add-uki', dest = 'adduki', type = str,
+                       help = 'add boot entry for UKI', metavar = 'PATH')
+    group.add_argument('--shim', dest = 'shim', type = str,
+                       help = 'use specified shim binary', metavar = 'PATH')
+    group.add_argument('--title', dest = 'title', type = str,
+                       help = 'use specified title for the entry', metavar = 'TITLE')
+
     options = parser.parse_args()
 
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
+    # sanity checks
+    if options.varsfile and options.adduki:
+        logging.error('operation not supported for edk2 varstores')
+        sys.exit(1)
+
+    # read info
     if options.varsfile:
         bootcfg = VarStoreEfiBootConfig(options.varsfile)
     else:
@@ -241,7 +322,17 @@ def main():
         bootcfg = LinuxEfiBootConfig()
         #print(esp.dev_path_file('/boot/efi/EFI/fedora/shimx64.efi'))
 
-    bootcfg.print_cfg(options.verbose)
+    # apply updates
+    if options.adduki:
+        add_uki(bootcfg, esp, options)
+    else:
+        # default action
+        options.show = True
+
+    # print info
+    if options.show:
+        bootcfg.print_cfg(options.verbose)
+
     return 0
 
 if __name__ == '__main__':
