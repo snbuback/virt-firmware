@@ -107,7 +107,7 @@ class EfiBootConfig:
         return None
 
     def find_unused_entry(self):
-        nr = 0;
+        nr = 0
         while nr in self.bentr:
             nr += 1
         return nr
@@ -266,11 +266,11 @@ def add_uki(bootcfg, esp, options):
     if nr:
         logging.info('Entry exists (Boot%04X)', nr)
     else:
-        devpath = esp.dev_path_file(options.shim)
+        devicepath = esp.dev_path_file(options.shim)
         optdata = ucs16.from_string(efiuki)
         entry = bootentry.BootEntry(title = ucs16.from_string(options.title),
                                     attr = bootentry.LOAD_OPTION_ACTIVE,
-                                    devicepath = devpath,
+                                    devicepath = devicepath,
                                     optdata = bytes(optdata))
         logging.info('Create new entry: %s', str(entry))
         nr = bootcfg.add_entry(entry)
