@@ -6,6 +6,7 @@ import sys
 import struct
 import logging
 import argparse
+import subprocess
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
@@ -119,6 +120,43 @@ class LinuxEfiBootConfig(EfiBootConfig):
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
 
+class LinuxBlockDev:
+    """ block device """
+
+    def __init__(self, mount, device = None):
+        self.mount = mount
+        self.device = device
+        self.udevenv = {}
+        if not self.device:
+            self.find_device(mount)
+        if self.device:
+            self.device_info()
+
+    def find_device(self, mount):
+        result = subprocess.run([ 'mount', ], stdout = subprocess.PIPE, check = True)
+        for line in result.stdout.decode().split('\n'):
+            try:
+                (dev, o, mnt, t, fs, opts) = line.split(' ')
+            except ValueError:
+                continue
+            if mnt != mount:
+                continue
+            self.device = dev
+            return
+        return
+
+    def device_info(self):
+        result = subprocess.run([ 'udevadm', 'info', self.device ],
+                                stdout = subprocess.PIPE, check = True)
+        regex = re.compile('^E: ([A-Z0-9_]+)=([^\n]*)')
+        for line in result.stdout.decode().split('\n'):
+            m = regex.match(line)
+            if not m:
+                continue
+            self.udevenv[m.group(1)] = m.group(2)
+        print(self.udevenv)
+
+
 class VarStoreEfiBootConfig(EfiBootConfig):
     """ read efi boot configuration from varstore  """
 
@@ -149,6 +187,11 @@ class VarStoreEfiBootConfig(EfiBootConfig):
             if var:
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
+def esp_path():
+    result = subprocess.run([ 'bootctl', '--print-esp-path' ],
+                            stdout = subprocess.PIPE, check = True)
+    return result.stdout.decode().strip('\n')
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -167,6 +210,7 @@ def main():
     if options.varsfile:
         bootcfg = VarStoreEfiBootConfig(options.varsfile)
     else:
+        esp = LinuxBlockDev(esp_path())
         bootcfg = LinuxEfiBootConfig()
 
     bootcfg.print_cfg(options.verbose)
