@@ -1,6 +1,7 @@
 #/usr/bin/python3
-# pylint: disable=consider-iterating-dictionary
+# pylint: disable=consider-iterating-dictionary,too-many-instance-attributes
 """ experimental efi boot config tool """
+import re
 import sys
 import struct
 import logging
@@ -25,6 +26,7 @@ class EfiBootConfig:
         self.bcurr = None  # parsed BootCurrent
         self.bnext = None  # parsed BootNext
         self.blist = []    # parsed BootOrder
+        self.unused = []   # unused BootNNNN entry list
         self.bentr = {}    # parsed BootNNNN entries
 
     def parse_boot_variables(self):
@@ -42,6 +44,18 @@ class EfiBootConfig:
             nr = struct.unpack_from('=H', self.bootnext.data)
             self.bnext = nr[0]
             self.bentr[nr[0]] = None
+
+    def add_unused_entries(self, names):
+        regex = re.compile('Boot([0-9A-Z]{4})')
+        for name in names:
+            result = regex.match(name)
+            if not result:
+                continue
+            nr = int(result.group(1), 16)
+            if nr in self.bentr:
+                continue
+            self.unused.append(nr)
+            self.bentr[nr] = None
 
     @staticmethod
     def print_optdata(prefix, optdata):
@@ -77,6 +91,8 @@ class EfiBootConfig:
             self.print_entry(self.bnext, verbose)
         for nr in self.blist:
             self.print_entry(nr, verbose)
+        for nr in self.unused:
+            self.print_entry(nr, verbose)
 
 
 class LinuxEfiBootConfig(EfiBootConfig):
@@ -96,6 +112,7 @@ class LinuxEfiBootConfig(EfiBootConfig):
         self.bootcurrent = self.linux_read_variable('BootCurrent')
         self.bootnext = self.linux_read_variable('BootNext')
         self.parse_boot_variables()
+        self.add_unused_entries(self.varstore.scan[guids.EfiGlobalVariable])
         for nr in self.bentr.keys():
             var = self.linux_read_variable(f'Boot{nr:04X}')
             if var:
@@ -126,6 +143,7 @@ class VarStoreEfiBootConfig(EfiBootConfig):
         self.bootorder = self.varlist.get('BootOrder')
         self.bootnext = self.varlist.get('BootNext')
         self.parse_boot_variables()
+        self.add_unused_entries(self.varlist.keys())
         for nr in self.bentr.keys():
             var = self.varlist.get(f'Boot{nr:04X}')
             if var:
