@@ -84,13 +84,14 @@ class LinuxEfiBootConfig(EfiBootConfig):
 
     def __init__(self):
         super().__init__()
+        self.varstore = None
         self.linux_init()
 
-    @staticmethod
-    def linux_read_variable(name):
-        return linux.LinuxVarStore.get_variable(name, guids.EfiGlobalVariable)
+    def linux_read_variable(self, name):
+        return self.varstore.get_variable(name, guids.EfiGlobalVariable)
 
     def linux_init(self):
+        self.varstore = linux.LinuxVarStore()
         self.bootorder = self.linux_read_variable('BootOrder')
         self.bootcurrent = self.linux_read_variable('BootCurrent')
         self.bootnext = self.linux_read_variable('BootNext')

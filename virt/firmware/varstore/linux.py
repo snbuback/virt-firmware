@@ -11,10 +11,38 @@ from virt.firmware.efi import efivar
 class LinuxVarStore:
     """  class for linux efivarfs varstore """
 
-    @staticmethod
-    def get_variable(name, guid,
-                     path = '/sys/firmware/efi/efivars'):
-        filename = os.path.join(path, f'{name}-{guid}')
+    def __init__(self, path = '/sys/firmware/efi/efivars'):
+        self.path = path
+        self.scan = {}
+
+    def scanadd(self, name, guid):
+        if not self.scan.get(guid):
+            self.scan[guid] = {}
+        self.scan[guid][name] = True
+
+    def scandir(self):
+        if self.scan:
+            return
+        if not os.path.isdir(self.path):
+            return
+        with os.scandir(self.path) as it:
+            for entry in it:
+                if not entry.is_file():
+                    continue
+                if len(entry.name) < 38:
+                    continue
+                name = entry.name[ : len(entry.name) - 37 ]
+                guid = entry.name[ len(entry.name) - 36 : ]
+                self.scanadd(name, guid)
+
+    def get_variable(self, name, guid):
+        self.scandir()
+        if not self.scan.get(guid):
+            return
+        if not self.scan[guid].get(name):
+            return
+
+        filename = os.path.join(self.path, f'{name}-{guid}')
         try:
             with open(filename, "rb") as f:
                 attr = int.from_bytes(f.read(4), byteorder='little', signed=False)
@@ -26,23 +54,14 @@ class LinuxVarStore:
         except OSError:
             return None
 
-    @staticmethod
-    def get_varlist(path = '/sys/firmware/efi/efivars',
-                    volatile = False):
-
+    def get_varlist(self, volatile = False):
+        self.scandir()
         varlist = efivar.EfiVarList()
-        if not os.path.isdir(path):
-            return varlist
 
-        logging.info('reading linux varstore from %s', path)
-        with os.scandir(path) as it:
-            for entry in it:
-                if not entry.is_file():
-                    continue
-                name = entry.name[ : len(entry.name) - 37 ]
-                guid = entry.name[ len(entry.name) - 36 : ]
-                filename = os.path.join(path, entry.name)
-                var = LinuxVarStore.get_variable(name, guid, path)
+        logging.info('reading linux varstore from %s', self.path)
+        for (guid, names) in self.scan.items():
+            for name in names.keys():
+                var = self.get_variable(name, guid)
                 if var and (var.attr & efivar.EFI_VARIABLE_NON_VOLATILE or volatile):
                     varlist[name] = var
         return varlist

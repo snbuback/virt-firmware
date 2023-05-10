@@ -28,7 +28,8 @@ def main():
     logging.basicConfig(format = '%(levelname)s: %(message)s',
                         level = getattr(logging, options.loglevel.upper()))
 
-    varlist = linux.LinuxVarStore.get_varlist(volatile = options.volatile)
+    varstore = linux.LinuxVarStore()
+    varlist = varstore.get_varlist(volatile = options.volatile)
     if options.verbose:
         varlist.print_normal(options.hexdump)
     else:

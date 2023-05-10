@@ -79,7 +79,8 @@ class TestsEdk2(unittest.TestCase):
 
     @unittest.skipUnless(os.path.exists('/sys/firmware/efi/efivars'), 'no efivars fs')
     def test_parse_linux(self):
-        varlist = linux.LinuxVarStore.get_varlist()
+        store = linux.LinuxVarStore()
+        varlist = store.get_varlist()
 
     def test_parse_aws(self):
         varlist = aws.AwsVarStore(TEST_AWS)
