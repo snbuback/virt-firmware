@@ -37,6 +37,14 @@ class DevicePathElem:
         self.subtype = 0x04	# filepath
         self.data    = bytes(ucs16.from_string(str(filepath)))
 
+    def set_gpt(self, pnr, poff, plen, guid):
+        self.devtype = 0x04	# media
+        self.subtype = 0x01	# hard drive
+        self.data = b''
+        self.data += struct.pack('=LQQ', pnr, poff, plen)
+        self.data += guids.parse_str(guid).bytes_le
+        self.data += struct.pack('=BB', 0x02, 0x02)
+
     def fmt_hw(self):
         if self.subtype == 0x01:
             (func, dev) = struct.unpack_from('=BB', self.data)

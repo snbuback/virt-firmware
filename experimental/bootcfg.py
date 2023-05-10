@@ -10,6 +10,7 @@ import subprocess
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
+from virt.firmware.efi import devpath
 from virt.firmware.efi import bootentry
 
 from virt.firmware.varstore import aws
@@ -154,7 +155,32 @@ class LinuxBlockDev:
             if not m:
                 continue
             self.udevenv[m.group(1)] = m.group(2)
-        print(self.udevenv)
+
+    def efi_filename(self, filename):
+        if not filename.startswith(self.mount):
+            raise RuntimeError(f'{filename} is not on {self.mount}')
+        return filename[ len(self.mount) : ].replace('/', '\\')
+
+    def dev_path_elem_file(self, filename):
+        elem = devpath.DevicePathElem()
+        elem.set_filepath(self.efi_filename(filename))
+        return elem
+
+    def dev_path_elem_gpt(self):
+        elem = devpath.DevicePathElem()
+        if self.udevenv['ID_PART_ENTRY_SCHEME'] != 'gpt':
+            raise RuntimeError('partition table is not gpt')
+        elem.set_gpt(int(self.udevenv['ID_PART_ENTRY_NUMBER']),
+                     int(self.udevenv['ID_PART_ENTRY_OFFSET']),
+                     int(self.udevenv['ID_PART_ENTRY_SIZE']),
+                     self.udevenv['ID_PART_ENTRY_UUID'])
+        return elem
+
+    def dev_path_file(self, filename):
+        path = devpath.DevicePath()
+        path.append(self.dev_path_elem_gpt())
+        path.append(self.dev_path_elem_file(filename))
+        return path
 
 
 class VarStoreEfiBootConfig(EfiBootConfig):
@@ -187,6 +213,7 @@ class VarStoreEfiBootConfig(EfiBootConfig):
             if var:
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
+
 def esp_path():
     result = subprocess.run([ 'bootctl', '--print-esp-path' ],
                             stdout = subprocess.PIPE, check = True)
@@ -212,6 +239,7 @@ def main():
     else:
         esp = LinuxBlockDev(esp_path())
         bootcfg = LinuxEfiBootConfig()
+        #print(esp.dev_path_file('/boot/efi/EFI/fedora/shimx64.efi'))
 
     bootcfg.print_cfg(options.verbose)
     return 0
