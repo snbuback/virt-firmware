@@ -294,15 +294,17 @@ def main():
                         help = 'print more details')
 
     group = parser.add_argument_group('update unified kernel image (UKI) boot entries')
+    group.add_argument('--add-uki', dest = 'adduki', type = str,
+                       help = 'add boot entry for UKI imae FILE', metavar = 'FILE')
+
+    group = parser.add_argument_group('options for UKI updates')
     group.add_argument('--dry-run', dest = 'dryrun',
                        action = 'store_true', default = False,
                        help = 'do not actually update the configuration')
-    group.add_argument('--add-uki', dest = 'adduki', type = str,
-                       help = 'add boot entry for UKI', metavar = 'PATH')
-    group.add_argument('--shim', dest = 'shim', type = str,
-                       help = 'use specified shim binary', metavar = 'PATH')
     group.add_argument('--title', dest = 'title', type = str,
-                       help = 'use specified title for the entry', metavar = 'TITLE')
+                       help = 'label the entry with TITLE', metavar = 'TITLE')
+    group.add_argument('--shim', dest = 'shim', type = str,
+                       help = 'use shim binary FILE', metavar = 'FILE')
 
     options = parser.parse_args()
 
