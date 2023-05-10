@@ -102,7 +102,7 @@ class EfiBootConfig:
             if not entry.optdata:
                 continue
             optpath = str(ucs16.from_ucs16(entry.optdata, 0))
-            if optpath == uki:
+            if optpath == str(uki):
                 return nr
         return None
 
