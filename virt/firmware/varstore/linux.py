@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """ linux efivarfs varstore parser """
 import os
+import struct
 import logging
 
 from virt.firmware.efi import guids
@@ -53,6 +54,14 @@ class LinuxVarStore:
             return var
         except OSError:
             return None
+
+    def set_variable(self, var):
+        filename = os.path.join(self.path, f'{var.name}-{var.guid}')
+        blob = struct.pack('=L', var.attr)
+        blob += var.data
+        logging.info('updating %s', filename)
+        with open(filename, "wb") as f:
+            f.write(blob)
 
     def get_varlist(self, volatile = False):
         self.scandir()
