@@ -38,9 +38,9 @@ class LinuxVarStore:
     def get_variable(self, name, guid):
         self.scandir()
         if not self.scan.get(guid):
-            return
+            return None
         if not self.scan[guid].get(name):
-            return
+            return None
 
         filename = os.path.join(self.path, f'{name}-{guid}')
         try:
