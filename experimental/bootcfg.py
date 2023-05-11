@@ -19,6 +19,9 @@ from virt.firmware.varstore import edk2
 from virt.firmware.varstore import linux
 
 
+########################################################################
+# EfiBootConfig class + children
+
 class EfiBootConfig:
     """ efi boot configuration """
 
@@ -119,6 +122,37 @@ class EfiBootConfig:
         return nr
 
 
+class VarStoreEfiBootConfig(EfiBootConfig):
+    """ read efi boot configuration from varstore  """
+
+    def __init__(self, filename):
+        super().__init__()
+        self.varstore = None
+        self.varlist  = None
+        self.varstore_init(filename)
+
+    def varstore_init(self, filename):
+        if edk2.Edk2VarStore.probe(filename):
+            self.varstore = edk2.Edk2VarStore(filename)
+        elif edk2.Edk2VarStoreQcow2.probe(filename):
+            self.varstore = edk2.Edk2VarStoreQcow2(filename)
+        elif aws.AwsVarStore.probe(filename):
+            self.varstore = aws.AwsVarStore(filename)
+        else:
+            return
+
+        self.varlist = self.varstore.get_varlist()
+        self.bootcurrent = None
+        self.bootorder = self.varlist.get('BootOrder')
+        self.bootnext = self.varlist.get('BootNext')
+        self.parse_boot_variables()
+        self.add_unused_entries(self.varlist.keys())
+        for nr in self.bentr.keys():
+            var = self.varlist.get(f'Boot{nr:04X}')
+            if var:
+                self.bentr[nr] = bootentry.BootEntry(data = var.data)
+
+
 class LinuxEfiBootConfig(EfiBootConfig):
     """ read efi boot configuration from linux sysfs """
 
@@ -152,6 +186,8 @@ class LinuxEfiBootConfig(EfiBootConfig):
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
 
+########################################################################
+# LinuxBlockDev class
 
 class LinuxBlockDev:
     """ block device """
@@ -217,36 +253,8 @@ class LinuxBlockDev:
         return path
 
 
-class VarStoreEfiBootConfig(EfiBootConfig):
-    """ read efi boot configuration from varstore  """
-
-    def __init__(self, filename):
-        super().__init__()
-        self.varstore = None
-        self.varlist  = None
-        self.varstore_init(filename)
-
-    def varstore_init(self, filename):
-        if edk2.Edk2VarStore.probe(filename):
-            self.varstore = edk2.Edk2VarStore(filename)
-        elif edk2.Edk2VarStoreQcow2.probe(filename):
-            self.varstore = edk2.Edk2VarStoreQcow2(filename)
-        elif aws.AwsVarStore.probe(filename):
-            self.varstore = aws.AwsVarStore(filename)
-        else:
-            return
-
-        self.varlist = self.varstore.get_varlist()
-        self.bootcurrent = None
-        self.bootorder = self.varlist.get('BootOrder')
-        self.bootnext = self.varlist.get('BootNext')
-        self.parse_boot_variables()
-        self.add_unused_entries(self.varlist.keys())
-        for nr in self.bentr.keys():
-            var = self.varlist.get(f'Boot{nr:04X}')
-            if var:
-                self.bentr[nr] = bootentry.BootEntry(data = var.data)
-
+########################################################################
+# main
 
 def esp_path():
     result = subprocess.run([ 'bootctl', '--print-esp-path' ],
