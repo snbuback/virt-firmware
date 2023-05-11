@@ -148,6 +148,10 @@ class LinuxBlockDev:
 class LinuxOsInfo(collections.UserDict):
     """ parser for /etc/os-release """
 
+    esp_distro_dir_map = {
+        'rhel': 'redhat',
+    }
+
     def __init__(self, path = None):
         super().__init__()
         self.blob = None
@@ -166,6 +170,9 @@ class LinuxOsInfo(collections.UserDict):
             if not m:
                 continue
             self[m.group(1)] = m.group(2)
+
+    def esp_distro_dir(self):
+        return self.esp_distro_dir_map.get(self['ID'], self['ID'])
 
 
 def get_esp_path():
