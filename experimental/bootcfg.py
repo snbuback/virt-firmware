@@ -34,6 +34,8 @@ class EfiBootConfig:
         self.blist = []    # parsed BootOrder
         self.unused = []   # unused BootNNNN entry list
         self.bentr = {}    # parsed BootNNNN entries
+        self.bnext_updated = False
+        self.blist_updated = False
 
     def parse_boot_variables(self):
         if self.bootorder:
@@ -91,9 +93,9 @@ class EfiBootConfig:
     def print_cfg(self, verbose = False):
         print('# C - BootCurrent, N - BootNext, O - BootOrder')
         print('# --------------------------------------------')
-        if self.bcurr and not self.bcurr in self.blist:
+        if self.bcurr is not None and not self.bcurr in self.blist:
             self.print_entry(self.bcurr, verbose)
-        if self.bnext and not self.bnext in self.blist and self.bcurr != self.bnext:
+        if self.bnext is not None and not self.bnext in self.blist and self.bcurr != self.bnext:
             self.print_entry(self.bnext, verbose)
         for nr in self.blist:
             self.print_entry(nr, verbose)
@@ -120,6 +122,26 @@ class EfiBootConfig:
         self.bentr[nr] = entry
         self.unused.append(nr)
         return nr
+
+    def remove_entry(self, nr):
+        del self.bentr[nr]
+        if nr == self.bnext:
+            self.bnext = None
+            self.bnext_updated = True
+        if nr in self.blist:
+            self.blist = filter(lambda x: x != nr, self.blist)
+            self.blist_updated = True
+        if nr in self.unused:
+            self.unused = filter(lambda x: x != nr, self.unused)
+
+    def set_boot_next(self, nr):
+        self.bnext = nr
+        self.bnext_updated = True
+
+    def set_boot_order(self, nr, pos):
+        self.blist = filter(lambda x: x != nr, self.blist)
+        self.blist.insert(pos, nr)
+        self.blist_updated = True
 
 
 class VarStoreEfiBootConfig(EfiBootConfig):
@@ -171,6 +193,29 @@ class LinuxEfiBootConfig(EfiBootConfig):
         var = efivar.EfiVar(ucs16.from_string(f'Boot{nr:04X}'),
                             guid = guids.parse_str(guids.EfiGlobalVariable),
                             data = bytes(self.bentr[nr]))
+        self.varstore.set_variable(var)
+
+    def linux_remove_entry(self, nr):
+        name = f'Boot{nr:04X}'
+        self.varstore.del_variable(name, guids.EfiGlobalVariable)
+
+    def linux_update_next(self):
+        if not self.bnext_updated:
+            return
+        if self.bnext is None:
+            self.varstore.del_variable('BootNext', guids.EfiGlobalVariable)
+            return
+        var = efivar.EfiVar(ucs16.from_string('BootNext'),
+                            guid = guids.parse_str(guids.EfiGlobalVariable))
+        var.set_boot_next(self.bnext)
+        self.varstore.set_variable(var)
+
+    def linux_update_order(self):
+        if not self.blist_updated:
+            return
+        var = efivar.EfiVar(ucs16.from_string('BootOrder'),
+                            guid = guids.parse_str(guids.EfiGlobalVariable))
+        var.set_boot_order(self.blist)
         self.varstore.set_variable(var)
 
     def linux_init(self):
@@ -271,7 +316,7 @@ def add_uki(bootcfg, esp, options):
 
     efiuki  = esp.efi_filename(options.adduki)
     nr = bootcfg.find_uki_entry(efiuki)
-    if nr:
+    if nr is not None:
         logging.info('Entry exists (Boot%04X)', nr)
     else:
         devicepath = esp.dev_path_file(options.shim)
@@ -285,6 +330,36 @@ def add_uki(bootcfg, esp, options):
         logging.info('Added entry (Boot%04X)', nr)
         if not options.dryrun:
             bootcfg.linux_write_entry(nr)
+
+    if options.bootnext:
+        bootcfg.set_boot_next(nr)
+        if not options.dryrun:
+            bootcfg.linux_update_next()
+
+
+def remove_uki(bootcfg, esp, options):
+    efiuki = esp.efi_filename(options.removeuki)
+    nr = bootcfg.find_uki_entry(efiuki)
+    if nr is None:
+        logging.warning('No entry found for %s', options.removeuki)
+        return
+
+    logging.info('Removing entry (Boot%04X)', nr)
+    bootcfg.remove_entry(nr)
+    if not options.dryrun:
+        bootcfg.linux_remove_entry(nr)
+        bootcfg.linux_update_next()
+        bootcfg.linux_update_order()
+
+
+def boot_success(bootcfg):
+    if bootcfg.bcurr == bootcfg.blist[0]:
+        logging.info('No update needed, BootCurrent already comes first in BootOrder.')
+        return
+    logging.info('Add BootCurrent (Boot%04X) to BootOrder', bootcfg.bcurr)
+    bootcfg.set_boot_order(bootcfg.bcurr, 0)
+    if not options.dryrun:
+        bootcfg.linux_update_order()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -303,7 +378,12 @@ def main():
 
     group = parser.add_argument_group('update unified kernel image (UKI) boot entries')
     group.add_argument('--add-uki', dest = 'adduki', type = str,
-                       help = 'add boot entry for UKI imae FILE', metavar = 'FILE')
+                       help = 'add boot entry for UKI image FILE', metavar = 'FILE')
+    group.add_argument('--remove-uki', dest = 'removeuki', type = str,
+                       help = 'remove boot entry for UKI image FILE', metavar = 'FILE')
+    group.add_argument('--boot-success', dest = 'bootok',
+                       action = 'store_true', default = False,
+                       help = 'boot is successful, update BootOrder')
 
     group = parser.add_argument_group('options for UKI updates')
     group.add_argument('--dry-run', dest = 'dryrun',
@@ -313,6 +393,9 @@ def main():
                        help = 'label the entry with TITLE', metavar = 'TITLE')
     group.add_argument('--shim', dest = 'shim', type = str,
                        help = 'use shim binary FILE', metavar = 'FILE')
+    group.add_argument('--once', '--boot-next', dest = 'bootnext',
+                       action = 'store_true', default = False,
+                       help = 'boot added entry once (using BootNext)')
 
     options = parser.parse_args()
 
@@ -320,7 +403,8 @@ def main():
                         level = getattr(logging, options.loglevel.upper()))
 
     # sanity checks
-    if options.varsfile and options.adduki:
+    if options.varsfile and (options.adduki or
+                             options.removeuki):
         logging.error('operation not supported for edk2 varstores')
         sys.exit(1)
 
@@ -335,6 +419,10 @@ def main():
     # apply updates
     if options.adduki:
         add_uki(bootcfg, esp, options)
+    elif options.removeuki:
+        remove_uki(bootcfg, esp, options)
+    elif options.bootok:
+        boot_success(bootcfg)
     else:
         # default action
         options.show = True
