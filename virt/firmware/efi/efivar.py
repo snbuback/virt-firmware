@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# pylint: disable=too-many-public-methods
 """ efi variables """
 
 import re
@@ -261,6 +262,12 @@ class EfiVar:
 
     def set_boot_next(self, index):
         self.data = struct.pack('=H', index)
+        self.update_time()
+
+    def set_boot_order(self, order):
+        self.data = b''
+        for item in order:
+            self.data += struct.pack('=H', item)
         self.update_time()
 
     def append_boot_order(self, index):
