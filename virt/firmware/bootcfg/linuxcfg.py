@@ -166,3 +166,10 @@ class LinuxOsInfo(collections.UserDict):
             if not m:
                 continue
             self[m.group(1)] = m.group(2)
+
+
+def get_esp_path():
+    """ query bootctl to get ESP path """
+    result = subprocess.run([ 'bootctl', '--print-esp-path' ],
+                            stdout = subprocess.PIPE, check = True)
+    return result.stdout.decode().strip('\n')

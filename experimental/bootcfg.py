@@ -3,7 +3,6 @@
 import sys
 import logging
 import argparse
-import subprocess
 
 from virt.firmware.efi import ucs16
 from virt.firmware.efi import bootentry
@@ -14,11 +13,6 @@ from virt.firmware.bootcfg import linuxcfg
 
 ########################################################################
 # main
-
-def esp_path():
-    result = subprocess.run([ 'bootctl', '--print-esp-path' ],
-                            stdout = subprocess.PIPE, check = True)
-    return result.stdout.decode().strip('\n')
 
 def add_uki(cfg, esp, options):
     if not options.shim:
@@ -126,9 +120,8 @@ def main():
     if options.varsfile:
         cfg = bootcfg.VarStoreEfiBootConfig(options.varsfile)
     else:
-        esp = linuxcfg.LinuxBlockDev(esp_path())
+        esp = linuxcfg.LinuxBlockDev(linuxcfg.get_esp_path())
         cfg = linuxcfg.LinuxEfiBootConfig()
-        #print(esp.dev_path_file('/boot/efi/EFI/fedora/shimx64.efi'))
 
     # apply updates
     if options.adduki:
