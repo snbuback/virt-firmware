@@ -1,6 +1,7 @@
 #/usr/bin/python3
 # pylint: disable=consider-iterating-dictionary,too-many-instance-attributes
 """ experimental efi boot config tool """
+import os
 import re
 import sys
 import struct
@@ -248,10 +249,15 @@ class LinuxBlockDev:
 
     def find_device(self, mount):
         result = subprocess.run([ 'mount', ], stdout = subprocess.PIPE, check = True)
+        with os.scandir(mount) as unused:
+            # nothing to to, just trigger automount
+            pass
         for line in result.stdout.decode().split('\n'):
             try:
                 (dev, o, mnt, t, fs, opts) = line.split(' ')
             except ValueError:
+                continue
+            if fs == 'autofs':
                 continue
             if mnt != mount:
                 continue
