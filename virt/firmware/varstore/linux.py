@@ -21,6 +21,9 @@ class LinuxVarStore:
             self.scan[guid] = {}
         self.scan[guid][name] = True
 
+    def scandel(self, name, guid):
+        del self.scan[guid][name]
+
     def scandir(self):
         if self.scan:
             return
@@ -62,6 +65,13 @@ class LinuxVarStore:
         logging.info('updating %s', filename)
         with open(filename, "wb") as f:
             f.write(blob)
+        self.scanadd(str(var.name), str(var.guid))
+
+    def del_variable(self, name, guid):
+        filename = os.path.join(self.path, f'{name}-{guid}')
+        logging.info('removing %s', filename)
+        os.unlink(filename)
+        self.scandel(name, guid)
 
     def get_varlist(self, volatile = False):
         self.scandir()
