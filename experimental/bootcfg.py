@@ -140,7 +140,7 @@ class EfiBootConfig:
         self.bnext_updated = True
 
     def set_boot_order(self, nr, pos):
-        self.blist = filter(lambda x: x != nr, self.blist)
+        self.blist = list(filter(lambda x: x != nr, self.blist))
         self.blist.insert(pos, nr)
         self.blist_updated = True
 
