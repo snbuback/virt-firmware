@@ -145,12 +145,8 @@ class LinuxBlockDev:
         return path
 
 
-class LinuxOsInfo(collections.UserDict):
+class OsRelease(collections.UserDict):
     """ parser for /etc/os-release """
-
-    esp_distro_dir_map = {
-        'rhel': 'redhat',
-    }
 
     def __init__(self, path = None):
         super().__init__()
@@ -171,12 +167,40 @@ class LinuxOsInfo(collections.UserDict):
                 continue
             self[m.group(1)] = m.group(2)
 
+
+class LinuxOsInfo(OsRelease):
+    """ misc linux efi information """
+
+    esp_distro_dir_map = {
+        'rhel': 'redhat',
+    }
+
+    efi_arch_map = {
+        'x86_64'  : 'x64',
+        'aarch64' : 'aa64',
+    }
+
+    def __init__(self):
+        super().__init__(path = '/etc/os-release')
+        self.esp = None
+
     def esp_distro_dir(self):
         return self.esp_distro_dir_map.get(self['ID'], self['ID'])
 
+    def efi_arch(self):
+        arch = os.uname().machine
+        return self.efi_arch_map.get(arch)
 
-def get_esp_path():
-    """ query bootctl to get ESP path """
-    result = subprocess.run([ 'bootctl', '--print-esp-path' ],
-                            stdout = subprocess.PIPE, check = True)
-    return result.stdout.decode().strip('\n')
+    def esp_path(self):
+        if not self.esp:
+            result = subprocess.run([ 'bootctl', '--print-esp-path' ],
+                                    stdout = subprocess.PIPE, check = True)
+            self.esp = result.stdout.decode().strip('\n')
+        return self.esp
+
+    def shim_path(self):
+        esp    = self.esp_path()
+        subdir = self.esp_distro_dir()
+        arch   = self.efi_arch()
+        shim   = f'{esp}/EFI/{subdir}/shim{arch}.efi'
+        return shim

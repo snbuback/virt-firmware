@@ -120,7 +120,8 @@ def main():
     if options.varsfile:
         cfg = bootcfg.VarStoreEfiBootConfig(options.varsfile)
     else:
-        esp = linuxcfg.LinuxBlockDev(linuxcfg.get_esp_path())
+        osinfo = linuxcfg.LinuxOsInfo()
+        esp = linuxcfg.LinuxBlockDev(osinfo.esp_path())
         cfg = linuxcfg.LinuxEfiBootConfig()
 
     # apply updates
