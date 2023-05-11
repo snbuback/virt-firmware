@@ -1,10 +1,9 @@
 #/usr/bin/python3
-# pylint: disable=consider-iterating-dictionary,too-many-instance-attributes
+# pylint: disable=consider-iterating-dictionary
 """ experimental efi boot config tool """
 import os
 import re
 import sys
-import struct
 import logging
 import argparse
 import subprocess
@@ -15,168 +14,15 @@ from virt.firmware.efi import efivar
 from virt.firmware.efi import devpath
 from virt.firmware.efi import bootentry
 
-from virt.firmware.varstore import aws
-from virt.firmware.varstore import edk2
 from virt.firmware.varstore import linux
+
+from virt.firmware.bootcfg import bootcfg
 
 
 ########################################################################
 # EfiBootConfig class + children
 
-class EfiBootConfig:
-    """ efi boot configuration """
-
-    def __init__(self):
-        self.bootorder   = None
-        self.bootcurrent = None
-        self.bootnext    = None
-        self.bcurr = None  # parsed BootCurrent
-        self.bnext = None  # parsed BootNext
-        self.blist = []    # parsed BootOrder
-        self.unused = []   # unused BootNNNN entry list
-        self.bentr = {}    # parsed BootNNNN entries
-        self.bnext_updated = False
-        self.blist_updated = False
-
-    def parse_boot_variables(self):
-        if self.bootorder:
-            self.blist = []
-            for pos in range(len(self.bootorder.data) >> 1):
-                nr = struct.unpack_from('=H', self.bootorder.data, pos * 2)
-                self.blist.append(nr[0])
-                self.bentr[nr[0]] = None
-        if self.bootcurrent:
-            nr = struct.unpack_from('=H', self.bootcurrent.data)
-            self.bcurr = nr[0]
-            self.bentr[nr[0]] = None
-        if self.bootnext:
-            nr = struct.unpack_from('=H', self.bootnext.data)
-            self.bnext = nr[0]
-            self.bentr[nr[0]] = None
-
-    def add_unused_entries(self, names):
-        regex = re.compile('Boot([0-9A-Z]{4})')
-        for name in names:
-            result = regex.match(name)
-            if not result:
-                continue
-            nr = int(result.group(1), 16)
-            if nr in self.bentr:
-                continue
-            self.unused.append(nr)
-            self.bentr[nr] = None
-
-    @staticmethod
-    def print_optdata(prefix, optdata):
-        if len(optdata) >= 4 and optdata[0] != 0 and optdata[1] == 0:
-            print(f'{prefix} opt/ucs16: {ucs16.from_ucs16(optdata, 0)}')
-        elif len(optdata) == 16:
-            print(f'{prefix} opt/guid: {guids.parse_bin(optdata, 0)}')
-        else:
-            print(f'{prefix} opt/hex: {optdata.hex()}')
-
-    def print_entry(self, nr, verbose):
-        entry = self.bentr[nr]
-        cstr = 'C' if nr == self.bcurr else ' '
-        nstr = 'N' if nr == self.bnext else ' '
-        ostr = 'O' if nr in self.blist else ' '
-        if not entry:
-            print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  [ missing ]')
-            return
-        print(f'# {cstr} {nstr} {ostr}  -  {nr:04x}  -  {entry.title}')
-        if verbose:
-            prefix = '#                    ->'
-            print(f'{prefix} path: {entry.devicepath}')
-            if entry.optdata:
-                self.print_optdata(prefix, entry.optdata)
-            print('#')
-
-    def print_cfg(self, verbose = False):
-        print('# C - BootCurrent, N - BootNext, O - BootOrder')
-        print('# --------------------------------------------')
-        if self.bcurr is not None and not self.bcurr in self.blist:
-            self.print_entry(self.bcurr, verbose)
-        if self.bnext is not None and not self.bnext in self.blist and self.bcurr != self.bnext:
-            self.print_entry(self.bnext, verbose)
-        for nr in self.blist:
-            self.print_entry(nr, verbose)
-        for nr in self.unused:
-            self.print_entry(nr, verbose)
-
-    def find_uki_entry(self, uki):
-        for (nr, entry) in self.bentr.items():
-            if not entry.optdata:
-                continue
-            optpath = str(ucs16.from_ucs16(entry.optdata, 0))
-            if optpath == str(uki):
-                return nr
-        return None
-
-    def find_unused_entry(self):
-        nr = 0
-        while nr in self.bentr:
-            nr += 1
-        return nr
-
-    def add_entry(self, entry):
-        nr = self.find_unused_entry()
-        self.bentr[nr] = entry
-        self.unused.append(nr)
-        return nr
-
-    def remove_entry(self, nr):
-        del self.bentr[nr]
-        if nr == self.bnext:
-            self.bnext = None
-            self.bnext_updated = True
-        if nr in self.blist:
-            self.blist = filter(lambda x: x != nr, self.blist)
-            self.blist_updated = True
-        if nr in self.unused:
-            self.unused = filter(lambda x: x != nr, self.unused)
-
-    def set_boot_next(self, nr):
-        self.bnext = nr
-        self.bnext_updated = True
-
-    def set_boot_order(self, nr, pos):
-        self.blist = list(filter(lambda x: x != nr, self.blist))
-        self.blist.insert(pos, nr)
-        self.blist_updated = True
-
-
-class VarStoreEfiBootConfig(EfiBootConfig):
-    """ read efi boot configuration from varstore  """
-
-    def __init__(self, filename):
-        super().__init__()
-        self.varstore = None
-        self.varlist  = None
-        self.varstore_init(filename)
-
-    def varstore_init(self, filename):
-        if edk2.Edk2VarStore.probe(filename):
-            self.varstore = edk2.Edk2VarStore(filename)
-        elif edk2.Edk2VarStoreQcow2.probe(filename):
-            self.varstore = edk2.Edk2VarStoreQcow2(filename)
-        elif aws.AwsVarStore.probe(filename):
-            self.varstore = aws.AwsVarStore(filename)
-        else:
-            return
-
-        self.varlist = self.varstore.get_varlist()
-        self.bootcurrent = None
-        self.bootorder = self.varlist.get('BootOrder')
-        self.bootnext = self.varlist.get('BootNext')
-        self.parse_boot_variables()
-        self.add_unused_entries(self.varlist.keys())
-        for nr in self.bentr.keys():
-            var = self.varlist.get(f'Boot{nr:04X}')
-            if var:
-                self.bentr[nr] = bootentry.BootEntry(data = var.data)
-
-
-class LinuxEfiBootConfig(EfiBootConfig):
+class LinuxEfiBootConfig(bootcfg.EfiBootConfig):
     """ read efi boot configuration from linux sysfs """
 
     def __init__(self):
@@ -312,7 +158,7 @@ def esp_path():
                             stdout = subprocess.PIPE, check = True)
     return result.stdout.decode().strip('\n')
 
-def add_uki(bootcfg, esp, options):
+def add_uki(cfg, esp, options):
     if not options.shim:
         logging.error('shim binary not specified')
         sys.exit(1)
@@ -321,7 +167,7 @@ def add_uki(bootcfg, esp, options):
         sys.exit(1)
 
     efiuki  = esp.efi_filename(options.adduki)
-    nr = bootcfg.find_uki_entry(efiuki)
+    nr = cfg.find_uki_entry(efiuki)
     if nr is not None:
         logging.info('Entry exists (Boot%04X)', nr)
     else:
@@ -332,40 +178,40 @@ def add_uki(bootcfg, esp, options):
                                     devicepath = devicepath,
                                     optdata = bytes(optdata))
         logging.info('Create new entry: %s', str(entry))
-        nr = bootcfg.add_entry(entry)
+        nr = cfg.add_entry(entry)
         logging.info('Added entry (Boot%04X)', nr)
         if not options.dryrun:
-            bootcfg.linux_write_entry(nr)
+            cfg.linux_write_entry(nr)
 
     if options.bootnext:
-        bootcfg.set_boot_next(nr)
+        cfg.set_boot_next(nr)
         if not options.dryrun:
-            bootcfg.linux_update_next()
+            cfg.linux_update_next()
 
 
-def remove_uki(bootcfg, esp, options):
+def remove_uki(cfg, esp, options):
     efiuki = esp.efi_filename(options.removeuki)
-    nr = bootcfg.find_uki_entry(efiuki)
+    nr = cfg.find_uki_entry(efiuki)
     if nr is None:
         logging.warning('No entry found for %s', options.removeuki)
         return
 
     logging.info('Removing entry (Boot%04X)', nr)
-    bootcfg.remove_entry(nr)
+    cfg.remove_entry(nr)
     if not options.dryrun:
-        bootcfg.linux_remove_entry(nr)
-        bootcfg.linux_update_next()
-        bootcfg.linux_update_order()
+        cfg.linux_remove_entry(nr)
+        cfg.linux_update_next()
+        cfg.linux_update_order()
 
 
-def boot_success(bootcfg, options):
-    if bootcfg.bcurr == bootcfg.blist[0]:
+def boot_success(cfg, options):
+    if cfg.bcurr == cfg.blist[0]:
         logging.info('No update needed, BootCurrent already comes first in BootOrder.')
         return
-    logging.info('Add BootCurrent (Boot%04X) to BootOrder', bootcfg.bcurr)
-    bootcfg.set_boot_order(bootcfg.bcurr, 0)
+    logging.info('Add BootCurrent (Boot%04X) to BootOrder', cfg.bcurr)
+    cfg.set_boot_order(cfg.bcurr, 0)
     if not options.dryrun:
-        bootcfg.linux_update_order()
+        cfg.linux_update_order()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -416,26 +262,26 @@ def main():
 
     # read info
     if options.varsfile:
-        bootcfg = VarStoreEfiBootConfig(options.varsfile)
+        cfg = bootcfg.VarStoreEfiBootConfig(options.varsfile)
     else:
         esp = LinuxBlockDev(esp_path())
-        bootcfg = LinuxEfiBootConfig()
+        cfg = LinuxEfiBootConfig()
         #print(esp.dev_path_file('/boot/efi/EFI/fedora/shimx64.efi'))
 
     # apply updates
     if options.adduki:
-        add_uki(bootcfg, esp, options)
+        add_uki(cfg, esp, options)
     elif options.removeuki:
-        remove_uki(bootcfg, esp, options)
+        remove_uki(cfg, esp, options)
     elif options.bootok:
-        boot_success(bootcfg, options)
+        boot_success(cfg, options)
     else:
         # default action
         options.show = True
 
     # print info
     if options.show:
-        bootcfg.print_cfg(options.verbose)
+        cfg.print_cfg(options.verbose)
 
     return 0
 
