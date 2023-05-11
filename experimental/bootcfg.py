@@ -352,7 +352,7 @@ def remove_uki(bootcfg, esp, options):
         bootcfg.linux_update_order()
 
 
-def boot_success(bootcfg):
+def boot_success(bootcfg, options):
     if bootcfg.bcurr == bootcfg.blist[0]:
         logging.info('No update needed, BootCurrent already comes first in BootOrder.')
         return
@@ -422,7 +422,7 @@ def main():
     elif options.removeuki:
         remove_uki(bootcfg, esp, options)
     elif options.bootok:
-        boot_success(bootcfg)
+        boot_success(bootcfg, options)
     else:
         # default action
         options.show = True
