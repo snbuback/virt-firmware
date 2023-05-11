@@ -6,6 +6,7 @@ import re
 import sys
 import logging
 import subprocess
+import collections
 
 from virt.firmware.efi import guids
 from virt.firmware.efi import ucs16
@@ -142,3 +143,26 @@ class LinuxBlockDev:
         path.append(self.dev_path_elem_gpt())
         path.append(self.dev_path_elem_file(filename))
         return path
+
+
+class LinuxOsInfo(collections.UserDict):
+    """ parser for /etc/os-release """
+
+    def __init__(self, path = None):
+        super().__init__()
+        self.blob = None
+        if path:
+            with open(path, 'r', encoding = 'utf-8') as f:
+                self.blob = f.read()
+            self.parse()
+
+    def parse(self):
+        regex1 = re.compile('^([A-Z0-9_]+)="([^"]*)"')
+        regex2 = re.compile('^([A-Z0-9_]+)=([^\n]*)')
+        for line in self.blob.split('\n'):
+            m = regex1.match(line)
+            if not m:
+                m = regex2.match(line)
+            if not m:
+                continue
+            self[m.group(1)] = m.group(2)
