@@ -203,4 +203,6 @@ class LinuxOsInfo(OsRelease):
         subdir = self.esp_distro_dir()
         arch   = self.efi_arch()
         shim   = f'{esp}/EFI/{subdir}/shim{arch}.efi'
-        return shim
+        if os.path.exists(shim):
+            return shim
+        return None

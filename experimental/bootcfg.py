@@ -126,6 +126,8 @@ def main():
 
     # apply updates
     if options.adduki:
+        if not options.shim:
+            options.shim = osinfo.shim_path()
         add_uki(cfg, esp, options)
     elif options.removeuki:
         remove_uki(cfg, esp, options)
