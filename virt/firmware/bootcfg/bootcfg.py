@@ -126,11 +126,15 @@ class EfiBootConfig:
     def set_boot_next(self, nr):
         self.bnext = nr
         self.bnext_updated = True
+        if nr in self.unused:
+            self.unused = filter(lambda x: x != nr, self.unused)
 
     def set_boot_order(self, nr, pos):
         self.blist = list(filter(lambda x: x != nr, self.blist))
         self.blist.insert(pos, nr)
         self.blist_updated = True
+        if nr in self.unused:
+            self.unused = filter(lambda x: x != nr, self.unused)
 
 
 class VarStoreEfiBootConfig(EfiBootConfig):
