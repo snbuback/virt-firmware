@@ -14,6 +14,18 @@ from virt.firmware.bootcfg import linuxcfg
 ########################################################################
 # main
 
+def update_next_or_order(cfg, options, nr):
+    if options.bootnext:
+        cfg.set_boot_next(nr)
+        if not options.dryrun:
+            cfg.linux_update_next()
+
+    if options.bootorder is not None:
+        cfg.set_boot_order(nr, options.bootorder)
+        if not options.dryrun:
+            cfg.linux_update_order()
+
+
 def add_uki(cfg, esp, options):
     if not options.shim:
         logging.error('shim binary not specified')
@@ -39,10 +51,7 @@ def add_uki(cfg, esp, options):
         if not options.dryrun:
             cfg.linux_write_entry(nr)
 
-    if options.bootnext:
-        cfg.set_boot_next(nr)
-        if not options.dryrun:
-            cfg.linux_update_next()
+    update_next_or_order(cfg, options, nr)
 
 
 def update_uki(cfg, esp, options):
@@ -51,10 +60,7 @@ def update_uki(cfg, esp, options):
     if nr is None:
         logging.error('No entry found for %s', options.updateuki)
 
-    if options.bootnext:
-        cfg.set_boot_next(nr)
-        if not options.dryrun:
-            cfg.linux_update_next()
+    update_next_or_order(cfg, options, nr)
 
 
 def remove_uki(cfg, esp, options):
@@ -80,6 +86,7 @@ def boot_success(cfg, options):
     cfg.set_boot_order(cfg.bcurr, 0)
     if not options.dryrun:
         cfg.linux_update_order()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -108,6 +115,12 @@ def main():
                        help = 'boot is successful, update BootOrder')
 
     group = parser.add_argument_group('options for UKI updates')
+    group.add_argument('--once', '--boot-next', dest = 'bootnext',
+                       action = 'store_true', default = False,
+                       help = 'boot added/updated entry once (using BootNext)')
+    group.add_argument('--boot-order', dest = 'bootorder', type = int,
+                       help = 'place added/updated entry at POS in BootOrder (0 is first)',
+                       metavar = 'POS')
     group.add_argument('--dry-run', dest = 'dryrun',
                        action = 'store_true', default = False,
                        help = 'do not actually update the configuration')
@@ -115,9 +128,6 @@ def main():
                        help = 'label the entry with TITLE', metavar = 'TITLE')
     group.add_argument('--shim', dest = 'shim', type = str,
                        help = 'use shim binary FILE', metavar = 'FILE')
-    group.add_argument('--once', '--boot-next', dest = 'bootnext',
-                       action = 'store_true', default = False,
-                       help = 'boot added entry once (using BootNext)')
 
     options = parser.parse_args()
 
