@@ -45,6 +45,18 @@ def add_uki(cfg, esp, options):
             cfg.linux_update_next()
 
 
+def update_uki(cfg, esp, options):
+    efiuki  = esp.efi_filename(options.updateuki)
+    nr = cfg.find_uki_entry(efiuki)
+    if nr is None:
+        logging.error('No entry found for %s', options.updateuki)
+
+    if options.bootnext:
+        cfg.set_boot_next(nr)
+        if not options.dryrun:
+            cfg.linux_update_next()
+
+
 def remove_uki(cfg, esp, options):
     efiuki = esp.efi_filename(options.removeuki)
     nr = cfg.find_uki_entry(efiuki)
@@ -87,6 +99,8 @@ def main():
     group = parser.add_argument_group('update unified kernel image (UKI) boot entries')
     group.add_argument('--add-uki', dest = 'adduki', type = str,
                        help = 'add boot entry for UKI image FILE', metavar = 'FILE')
+    group.add_argument('--update-uki', dest = 'updateuki', type = str,
+                       help = 'update boot entry for UKI image FILE', metavar = 'FILE')
     group.add_argument('--remove-uki', dest = 'removeuki', type = str,
                        help = 'remove boot entry for UKI image FILE', metavar = 'FILE')
     group.add_argument('--boot-success', dest = 'bootok',
@@ -129,6 +143,8 @@ def main():
         if not options.shim:
             options.shim = osinfo.shim_path()
         add_uki(cfg, esp, options)
+    elif options.updateuki:
+        update_uki(cfg, esp, options)
     elif options.removeuki:
         remove_uki(cfg, esp, options)
     elif options.bootok:
