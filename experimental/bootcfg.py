@@ -110,9 +110,10 @@ def main():
                        help = 'update boot entry for UKI image FILE', metavar = 'FILE')
     group.add_argument('--remove-uki', dest = 'removeuki', type = str,
                        help = 'remove boot entry for UKI image FILE', metavar = 'FILE')
-    group.add_argument('--boot-success', dest = 'bootok',
+    group.add_argument('--boot-ok', '--boot-successful', dest = 'bootok',
                        action = 'store_true', default = False,
-                       help = 'boot is successful, update BootOrder')
+                       help = 'boot is successful, update BootOrder to have '
+                       'current entry listed first.')
 
     group = parser.add_argument_group('options for UKI updates')
     group.add_argument('--once', '--boot-next', dest = 'bootnext',
