@@ -40,6 +40,9 @@ def add_uki(cfg, options):
         logging.info('Entry exists (Boot%04X)', nr)
     else:
         efishim = linuxcfg.LinuxEfiFile(options.adduki)
+        if efishim.device != efiuki.device:
+            logging.error('shim and uki are on different filesystems')
+            sys.exit(1)
         optdata = ucs16.from_string(efiuki.efi_filename())
         entry = bootentry.BootEntry(title = ucs16.from_string(options.title),
                                     attr = bootentry.LOAD_OPTION_ACTIVE,
