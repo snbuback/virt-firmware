@@ -74,37 +74,21 @@ class LinuxEfiBootConfig(bootcfg.EfiBootConfig):
                 self.bentr[nr] = bootentry.BootEntry(data = var.data)
 
 
-class LinuxBlockDev:
-    """ linux block device and file system, functions to translate
-    linux file paths to efi paths (aka strings) and efi device paths
-    (aka EFI_DEVICE_PATH_PROTOCOLs) """
+class LinuxEfiFile:
+    """ class representing a file on a linux file system which we want reference in efi """
 
-    def __init__(self, mount, device = None):
-        self.mount = mount
-        self.device = device
+    def __init__(self, filename):
         self.udevenv = {}
-        if not self.device:
-            self.find_device(mount)
-        if self.device:
-            self.device_info()
+        self.filename = os.path.abspath(filename)
+        self.mount = self.filename
+        while not os.path.ismount(self.mount):
+            self.mount = os.path.dirname(self.mount)
 
-    def find_device(self, mount):
-        result = subprocess.run([ 'mount', ], stdout = subprocess.PIPE, check = True)
-        with os.scandir(mount) as unused:
-            # nothing to to, just trigger automount
-            pass
-        for line in result.stdout.decode().split('\n'):
-            try:
-                (dev, o, mnt, t, fs, opts) = line.split(' ')
-            except ValueError:
-                continue
-            if fs == 'autofs':
-                continue
-            if mnt != mount:
-                continue
-            self.device = dev
-            return
-        return
+        stat = os.stat(self.mount)
+        major = os.major(stat.st_dev)
+        minor = os.minor(stat.st_dev)
+        self.device = f'/sys/dev/block/{major}:{minor}'
+        self.device_info()
 
     def device_info(self):
         result = subprocess.run([ 'udevadm', 'info', self.device ],
@@ -116,15 +100,12 @@ class LinuxBlockDev:
                 continue
             self.udevenv[m.group(1)] = m.group(2)
 
-    def efi_filename(self, filename):
-        if not filename.startswith(self.mount):
-            logging.error('%s is not on %s', filename, self.mount)
-            sys.exit(1)
-        return filename[ len(self.mount) : ].replace('/', '\\')
+    def efi_filename(self):
+        return self.filename[ len(self.mount) : ].replace('/', '\\')
 
-    def dev_path_elem_file(self, filename):
+    def dev_path_elem_file(self):
         elem = devpath.DevicePathElem()
-        elem.set_filepath(self.efi_filename(filename))
+        elem.set_filepath(self.efi_filename())
         return elem
 
     def dev_path_elem_gpt(self):
@@ -138,10 +119,10 @@ class LinuxBlockDev:
                      self.udevenv['ID_PART_ENTRY_UUID'])
         return elem
 
-    def dev_path_file(self, filename):
+    def dev_path_file(self):
         path = devpath.DevicePath()
         path.append(self.dev_path_elem_gpt())
-        path.append(self.dev_path_elem_file(filename))
+        path.append(self.dev_path_elem_file())
         return path
 
 

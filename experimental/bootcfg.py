@@ -26,7 +26,7 @@ def update_next_or_order(cfg, options, nr):
             cfg.linux_update_order()
 
 
-def add_uki(cfg, esp, options):
+def add_uki(cfg, options):
     if not options.shim:
         logging.error('shim binary not specified')
         sys.exit(1)
@@ -34,16 +34,16 @@ def add_uki(cfg, esp, options):
         logging.error('entry title not specified')
         sys.exit(1)
 
-    efiuki  = esp.efi_filename(options.adduki)
-    nr = cfg.find_uki_entry(efiuki)
+    efiuki = linuxcfg.LinuxEfiFile(options.adduki)
+    nr = cfg.find_uki_entry(efiuki.efi_filename())
     if nr is not None:
         logging.info('Entry exists (Boot%04X)', nr)
     else:
-        devicepath = esp.dev_path_file(options.shim)
-        optdata = ucs16.from_string(efiuki)
+        efishim = linuxcfg.LinuxEfiFile(options.adduki)
+        optdata = ucs16.from_string(efiuki.efi_filename())
         entry = bootentry.BootEntry(title = ucs16.from_string(options.title),
                                     attr = bootentry.LOAD_OPTION_ACTIVE,
-                                    devicepath = devicepath,
+                                    devicepath = efishim.dev_path_file(),
                                     optdata = bytes(optdata))
         logging.info('Create new entry: %s', str(entry))
         nr = cfg.add_entry(entry)
@@ -54,18 +54,19 @@ def add_uki(cfg, esp, options):
     update_next_or_order(cfg, options, nr)
 
 
-def update_uki(cfg, esp, options):
-    efiuki  = esp.efi_filename(options.updateuki)
-    nr = cfg.find_uki_entry(efiuki)
+def update_uki(cfg, options):
+    efiuki = linuxcfg.LinuxEfiFile(options.adduki)
+    nr = cfg.find_uki_entry(efiuki.efi_filename())
     if nr is None:
         logging.error('No entry found for %s', options.updateuki)
+        sys.exit(1)
 
     update_next_or_order(cfg, options, nr)
 
 
-def remove_uki(cfg, esp, options):
-    efiuki = esp.efi_filename(options.removeuki)
-    nr = cfg.find_uki_entry(efiuki)
+def remove_uki(cfg, options):
+    efiuki = linuxcfg.LinuxEfiFile(options.adduki)
+    nr = cfg.find_uki_entry(efiuki.efi_filename())
     if nr is None:
         logging.warning('No entry found for %s', options.removeuki)
         return
@@ -145,19 +146,18 @@ def main():
     if options.varsfile:
         cfg = bootcfg.VarStoreEfiBootConfig(options.varsfile)
     else:
-        osinfo = linuxcfg.LinuxOsInfo()
-        esp = linuxcfg.LinuxBlockDev(osinfo.esp_path())
         cfg = linuxcfg.LinuxEfiBootConfig()
 
     # apply updates
     if options.adduki:
         if not options.shim:
+            osinfo = linuxcfg.LinuxOsInfo()
             options.shim = osinfo.shim_path()
-        add_uki(cfg, esp, options)
+        add_uki(cfg, options)
     elif options.updateuki:
-        update_uki(cfg, esp, options)
+        update_uki(cfg, options)
     elif options.removeuki:
-        remove_uki(cfg, esp, options)
+        remove_uki(cfg, options)
     elif options.bootok:
         boot_success(cfg, options)
     else:
