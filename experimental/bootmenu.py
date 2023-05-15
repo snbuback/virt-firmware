@@ -16,17 +16,16 @@ def bootmenu(cfg):
     for (nr, entry) in cfg.bentr.items():
         cmdline += [ str(nr), str(entry.title) ]
 
-    result = subprocess.run(cmdline, stderr = subprocess.PIPE, check = True)
+    result = subprocess.run(cmdline, stderr = subprocess.PIPE, check = False)
     subprocess.run(['clear',], check = True)
-    nr = result.stderr.decode()
-    if nr == '':
+    if result.returncode != 0:
         return None
-    return int(nr)
+    return int(result.stderr.decode())
 
 def main():
     parser = argparse.ArgumentParser(
         description = 'efi boot menu')
-    parser.add_argument('--reboot', dest = 'reboot',
+    parser.add_argument('-r', '--reboot', dest = 'reboot',
                         default = False, action = 'store_true',
                         help = 'reboot after picking an entry')
     options = parser.parse_args()
