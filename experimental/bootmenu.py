@@ -10,7 +10,7 @@ from virt.firmware.bootcfg import linuxcfg
 def bootmenu(cfg):
     rows = os.get_terminal_size().lines
     cols = os.get_terminal_size().columns
-    cmdline = [ 'dialog', '--menu', 'efi boot menu',
+    cmdline = [ 'dialog', '--menu', 'uefi boot menu',
                 str(rows - 10), str(cols - 30), str(rows - 18) ]
 
     for (nr, entry) in cfg.bentr.items():
@@ -24,7 +24,7 @@ def bootmenu(cfg):
 
 def main():
     parser = argparse.ArgumentParser(
-        description = 'efi boot menu')
+        description = 'uefi boot menu')
     parser.add_argument('-r', '--reboot', dest = 'reboot',
                         default = False, action = 'store_true',
                         help = 'reboot after picking an entry')
