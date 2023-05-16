@@ -59,7 +59,7 @@ def add_uki(cfg, options):
 
 
 def update_uki(cfg, options):
-    efiuki = linuxcfg.LinuxEfiFile(options.adduki)
+    efiuki = linuxcfg.LinuxEfiFile(options.updateuki)
     nr = cfg.find_uki_entry(efiuki.efi_filename())
     if nr is None:
         logging.error('No entry found for %s', options.updateuki)
@@ -69,7 +69,7 @@ def update_uki(cfg, options):
 
 
 def remove_uki(cfg, options):
-    efiuki = linuxcfg.LinuxEfiFile(options.adduki)
+    efiuki = linuxcfg.LinuxEfiFile(options.removeuki)
     nr = cfg.find_uki_entry(efiuki.efi_filename())
     if nr is None:
         logging.warning('No entry found for %s', options.removeuki)
