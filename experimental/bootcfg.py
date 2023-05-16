@@ -40,7 +40,7 @@ def add_uki(cfg, options):
     if nr is not None:
         logging.info('Entry exists (Boot%04X)', nr)
     else:
-        efishim = linuxcfg.LinuxEfiFile(options.adduki)
+        efishim = linuxcfg.LinuxEfiFile(options.shim)
         if efishim.device != efiuki.device:
             logging.error('shim and uki are on different filesystems')
             sys.exit(1)
@@ -115,6 +115,16 @@ def add_uri(cfg, options):
     update_next_or_order(cfg, options, nr)
 
 
+def remove_entry(cfg, options):
+    nr = int(options.removeentry, base = 16)
+    logging.info('Removing entry (Boot%04X)', nr)
+    cfg.remove_entry(nr)
+    if not options.dryrun:
+        cfg.linux_remove_entry(nr)
+        cfg.linux_update_next()
+        cfg.linux_update_order()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description = 'show and manage uefi boot entries')
@@ -145,6 +155,8 @@ def main():
     group = parser.add_argument_group('update other boot entries')
     group.add_argument('--add-uri', dest = 'adduri', type = str,
                        help = 'add boot entry to netboot URI', metavar = 'URI')
+    group.add_argument('--remove-entry', dest = 'removeentry', type = str,
+                       help = 'add remove entry NNNN', metavar = 'NNNN')
 
     group = parser.add_argument_group('options for boot entry updates')
     group.add_argument('--once', '--boot-next', dest = 'bootnext',
@@ -172,7 +184,8 @@ def main():
                              options.updateuki or
                              options.removeuki or
                              options.bootok or
-                             options.adduri):
+                             options.adduri or
+                             options.removeentry):
         logging.error('operation not supported for edk2 varstores')
         sys.exit(1)
 
@@ -196,6 +209,8 @@ def main():
         boot_success(cfg, options)
     elif options.adduri:
         add_uri(cfg, options)
+    elif options.removeentry:
+        remove_entry(cfg, options)
     else:
         # default action
         options.show = True
