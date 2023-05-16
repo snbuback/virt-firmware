@@ -5,6 +5,7 @@ import logging
 import argparse
 
 from virt.firmware.efi import ucs16
+from virt.firmware.efi import devpath
 from virt.firmware.efi import bootentry
 
 from virt.firmware.bootcfg import bootcfg
@@ -92,6 +93,28 @@ def boot_success(cfg, options):
         cfg.linux_update_order()
 
 
+def add_uri(cfg, options):
+    if not options.title:
+        logging.error('entry title not specified')
+        sys.exit(1)
+
+    devicepath = devpath.DevicePath.uri(options.adduri)
+    nr = cfg.find_devpath_entry(devicepath)
+    if nr is not None:
+        logging.info('Entry exists (Boot%04X)', nr)
+    else:
+        entry = bootentry.BootEntry(title = ucs16.from_string(options.title),
+                                    attr = bootentry.LOAD_OPTION_ACTIVE,
+                                    devicepath = devicepath)
+        logging.info('Create new entry: %s', str(entry))
+        nr = cfg.add_entry(entry)
+        logging.info('Added entry (Boot%04X)', nr)
+        if not options.dryrun:
+            cfg.linux_write_entry(nr)
+
+    update_next_or_order(cfg, options, nr)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description = 'show and manage uefi boot entries')
@@ -119,7 +142,11 @@ def main():
                        help = 'boot is successful, update BootOrder to have '
                        'current entry listed first.')
 
-    group = parser.add_argument_group('options for UKI updates')
+    group = parser.add_argument_group('update other boot entries')
+    group.add_argument('--add-uri', dest = 'adduri', type = str,
+                       help = 'add boot entry to netboot URI', metavar = 'URI')
+
+    group = parser.add_argument_group('options for boot entry updates')
     group.add_argument('--once', '--boot-next', dest = 'bootnext',
                        action = 'store_true', default = False,
                        help = 'boot added/updated entry once (using BootNext)')
@@ -140,8 +167,12 @@ def main():
                         level = getattr(logging, options.loglevel.upper()))
 
     # sanity checks
+    # pylint: disable=too-many-boolean-expressions
     if options.varsfile and (options.adduki or
-                             options.removeuki):
+                             options.updateuki or
+                             options.removeuki or
+                             options.bootok or
+                             options.adduri):
         logging.error('operation not supported for edk2 varstores')
         sys.exit(1)
 
@@ -163,6 +194,8 @@ def main():
         remove_uki(cfg, options)
     elif options.bootok:
         boot_success(cfg, options)
+    elif options.adduri:
+        add_uri(cfg, options)
     else:
         # default action
         options.show = True
