@@ -38,7 +38,7 @@ class StringUCS16:
     def __repr__(self):
         return f"{self.__class__.__name__}('{str(self)}')"
 
-def from_ucs16(data, offset):
+def from_ucs16(data, offset = 0):
     """ convert ucs-16 bytes to StringUCS16 """
     obj = StringUCS16()
     obj.parse_bin(data, offset)
