@@ -128,6 +128,21 @@ class DevicePathElem:
             return self.fmt_media()
         return f'Unknown(type=0x{self.devtype:x},subtype=0x{self.subtype:x})'
 
+    def __eq__(self, other):
+        if self.devtype != other.devtype:
+            return False
+        if self.subtype != other.subtype:
+            return False
+
+        if self.devtype == 0x04 and self.subtype == 0x04:
+            # FilePath -> compare case-insensitive
+            p1 = str(ucs16.from_ucs16(self.data)).lower()
+            p2 = str(ucs16.from_ucs16(other.data)).lower()
+            return p1 == p2
+
+        return self.data == other.data
+
+
 class DevicePath(collections.UserList):
     """ class reprsenting an efi device path """
 
@@ -167,3 +182,13 @@ class DevicePath(collections.UserList):
 
     def __str__(self):
         return "/".join(map(str, list(self)))
+
+    def __eq__(self, other):
+        if len(self) != len(other):
+            return False
+        idx = 0
+        while idx < len(self):
+            if self[idx] != other[idx]:
+                return False
+            idx += 1
+        return True
