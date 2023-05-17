@@ -1,5 +1,6 @@
 #/usr/bin/python3
 """ experimental efi boot config tool """
+import os
 import sys
 import logging
 import argparse
@@ -93,6 +94,35 @@ def boot_success(cfg, options):
         cfg.linux_update_order()
 
 
+def update_boot_csv(cfg, options):
+    if not options.shim:
+        logging.error('shim binary not specified')
+        sys.exit(1)
+    efishim  = linuxcfg.LinuxEfiFile(options.shim)
+    shimpath = efishim.dev_path_file()
+
+    shimdir  = os.path.dirname(options.shim)
+    shimname = os.path.basename(options.shim)
+    csvname  = shimname.upper() \
+                     .replace('SHIM', 'BOOT') \
+                     .replace('EFI','CSV')
+
+    csvdata = ''
+    for nr in cfg.blist:
+        entry = cfg.bentr[nr]
+        if entry.devicepath != shimpath:
+            continue
+        args = ''
+        if entry.optdata:
+            args = ucs16.from_ucs16(entry.optdata)
+        csvdata += f'{shimname},{entry.title},{args},Comment\n'
+
+    logging.info('Updating %s/%s', shimdir, csvname)
+    with open(f'{shimdir}/{csvname}', 'wb') as f:
+        f.write(b'\xff\xfe')
+        f.write(csvdata.encode('utf-16le'))
+
+
 def add_uri(cfg, options):
     if not options.title:
         logging.error('entry title not specified')
@@ -125,6 +155,7 @@ def remove_entry(cfg, options):
         cfg.linux_update_order()
 
 
+# pylint: disable=too-many-boolean-expressions,too-many-branches,too-many-statements
 def main():
     parser = argparse.ArgumentParser(
         description = 'show and manage uefi boot entries')
@@ -151,6 +182,9 @@ def main():
                        action = 'store_true', default = False,
                        help = 'boot is successful, update BootOrder to have '
                        'current entry listed first.')
+    group.add_argument('--update-csv', dest = 'updatecsv',
+                       action = 'store_true', default = False,
+                       help = 'update BOOT.CSV')
 
     group = parser.add_argument_group('update other boot entries')
     group.add_argument('--add-uri', dest = 'adduri', type = str,
@@ -179,11 +213,11 @@ def main():
                         level = getattr(logging, options.loglevel.upper()))
 
     # sanity checks
-    # pylint: disable=too-many-boolean-expressions
     if options.varsfile and (options.adduki or
                              options.updateuki or
                              options.removeuki or
                              options.bootok or
+                             options.updatecsv or
                              options.adduri or
                              options.removeentry):
         logging.error('operation not supported for edk2 varstores')
@@ -195,11 +229,14 @@ def main():
     else:
         cfg = linuxcfg.LinuxEfiBootConfig()
 
+    # find shim if needed
+    if not options.shim and (options.adduki or
+                             options.updatecsv):
+        osinfo = linuxcfg.LinuxOsInfo()
+        options.shim = osinfo.shim_path()
+
     # apply updates
     if options.adduki:
-        if not options.shim:
-            osinfo = linuxcfg.LinuxOsInfo()
-            options.shim = osinfo.shim_path()
         add_uki(cfg, options)
     elif options.updateuki:
         update_uki(cfg, options)
@@ -207,6 +244,8 @@ def main():
         remove_uki(cfg, options)
     elif options.bootok:
         boot_success(cfg, options)
+    elif options.updatecsv:
+        update_boot_csv(cfg, options)
     elif options.adduri:
         add_uri(cfg, options)
     elif options.removeentry:
