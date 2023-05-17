@@ -75,12 +75,19 @@ class EfiSigList(collections.UserList):
     def extract_cert(self, prefix = None):
         if self.x509 is None:
             return
-        cn = self.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
+        names = self.x509.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)
+        if len(names) > 0:
+            name = names[0].value
+        else:
+            name = hashlib.sha256(
+                self.x509.public_bytes(
+                    serialization.Encoding.DER)).digest().hex()
+
         filename = ""
         if prefix:
             filename += prefix + '-'
         filename += str(self[0]['guid']) + '-'
-        filename += "".join(x for x in cn.value if x.isalnum())
+        filename += "".join(x for x in name if x.isalnum())
         filename += ".pem"
         if os.path.exists(filename):
             logging.info('exists: %s, skipping', filename)
