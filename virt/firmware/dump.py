@@ -519,7 +519,7 @@ class Edk2Image(collections.UserList):
         pos = 0
         step = 1024
         skips = 0
-        maxskips = 32
+        maxskips = 256
         while pos + 32 < len(data):
             (tlen, sig) = struct.unpack_from('<QL', data, pos + 32)
             if sig == 0x4856465f:
