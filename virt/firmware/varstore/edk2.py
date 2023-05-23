@@ -23,11 +23,25 @@ class Edk2VarStore:
         self.parse_volume()
 
     @staticmethod
+    def find_nvdata(data):
+        offset = 0
+        while offset + 64 < len(data):
+            guid = guids.parse_bin(data, offset + 16)
+            if str(guid) == guids.NvData:
+                return offset
+            if str(guid) == guids.Ffs:
+                (tlen, sig) = struct.unpack_from('<QL', data, offset + 32)
+                offset += tlen
+                continue
+            offset += 1024
+        return None
+
+    @staticmethod
     def probe(filename):
         with open(filename, "rb") as f:
-            header = f.read(64)
-        guid = guids.parse_bin(header, 16)
-        if str(guid) != guids.NvData:
+            data = f.read()
+        offset = Edk2VarStore.find_nvdata(data)
+        if offset is None:
             return False
         return True
 
@@ -37,9 +51,13 @@ class Edk2VarStore:
             self.filedata = f.read()
 
     def parse_volume(self):
-        guid = guids.parse_bin(self.filedata, 16)
+        offset = self.find_nvdata(self.filedata)
+        if offset is None:
+            logging.error('%s: varstore not found', self.filename)
+            sys.exit(1)
+        guid = guids.parse_bin(self.filedata, offset + 16)
         (vlen, sig, attr, hlen, csum, xoff, rev, blocks, blksize) = \
-            struct.unpack_from("=QLLHHHxBLL", self.filedata, 32)
+            struct.unpack_from("=QLLHHHxBLL", self.filedata, offset + 32)
         logging.debug('vol=%s vlen=0x%x rev=%d blocks=%d*%d (0x%x)',
                       guids.name(guid), vlen, rev,
                       blocks, blksize, blocks * blksize)
@@ -49,7 +67,7 @@ class Edk2VarStore:
         if str(guid) != guids.NvData:
             logging.error('%s: not a variable store', self.filename)
             sys.exit(1)
-        return self.parse_varstore(hlen)
+        return self.parse_varstore(offset + hlen)
 
     def parse_varstore(self, start):
         guid = guids.parse_bin(self.filedata, start)
