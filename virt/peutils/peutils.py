@@ -109,6 +109,7 @@ def pe_section_flags(sec):
         x = 'x'
     return r + w + x
 
+# pylint: disable=too-many-branches
 def efi_binary(filename, extract = False, verbose = False):
     print(f'# file: {filename}')
     pe = pefile.PE(filename)
@@ -140,6 +141,9 @@ def efi_binary(filename, extract = False, verbose = False):
             (version, poff, loff) = struct.unpack_from('<III', levels)
             print_sbat_entries('previous', getcstr(levels[poff + 4:]))
             print_sbat_entries('latest', getcstr(levels[loff + 4:]))
+        if sec.Name == b'.sdmagic':
+            cstr = getcstr(sec.get_data())
+            print(f'#       {cstr.decode()}')
 
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
