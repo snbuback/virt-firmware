@@ -30,24 +30,24 @@ def is_ca_cert(cert):
         return bc.value.ca
     return False
 
-def print_cert(cert, verbose = False):
-    print('#          certificate')
+def print_cert(cert, ii, verbose = False):
+    print(f'# {ii}   certificate')
     if verbose:
-        print(f'#             subject: {cert.subject.rfc4514_string()}')
-        print(f'#             issuer : {cert.issuer.rfc4514_string()}')
-        print(f'#             valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
-        print(f'#             CA     : {is_ca_cert(cert)}')
+        print(f'# {ii}      subject: {cert.subject.rfc4514_string()}')
+        print(f'# {ii}      issuer : {cert.issuer.rfc4514_string()}')
+        print(f'# {ii}      valid  : {cert.not_valid_before} -> {cert.not_valid_after}')
+        print(f'# {ii}      CA     : {is_ca_cert(cert)}')
     else:
         scn = common_name(cert.subject)
         icn = common_name(cert.issuer)
-        print(f'#             subject CN: {scn}')
-        print(f'#             issuer  CN: {icn}')
+        print(f'# {ii}      subject CN: {scn}')
+        print(f'# {ii}      issuer  CN: {icn}')
 
-def print_vendor_cert(db, verbose = False):
+def print_vendor_cert(db, ii, verbose = False):
     # VENDOR_CERT_FILE
     try:
         crt = x509.load_der_x509_certificate(db, default_backend())
-        print_cert(crt, verbose)
+        print_cert(crt, ii, verbose)
         return
     except ValueError:
         pass
@@ -56,28 +56,28 @@ def print_vendor_cert(db, verbose = False):
     sigdb = siglist.EfiSigDB(db)
     for sl in sigdb:
         if str(sl.guid) == guids.EfiCertX509:
-            print_cert(sl.x509, verbose)
+            print_cert(sl.x509, ii, verbose)
         elif str(sl.guid) == guids.EfiCertSha256:
-            print('#          sha256')
-            print(f'#             {len(sl)} entries')
+            print(f'# {ii}   sha256')
+            print(f'# {ii}      {len(sl)} entries')
         else:
-            print(f'#          {sl.guid}')
+            print(f'# {ii}   {sl.guid}')
 
-def print_sbat_entries(name, data):
-    print(f'#       {name}')
+def print_sbat_entries(ii, name, data):
+    print(f'# {ii}{name}')
     entries = data.decode().rstrip('\n').split('\n')
     for entry in entries:
-        print(f'#           {entry}')
+        print(f'# {ii}    {entry}')
 
-def sig_type2(data, extract = False, verbose = False):
+def sig_type2(data, ii, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
     for cert in certs:
-        print_cert(cert, verbose)
+        print_cert(cert, ii, verbose)
 
         if extract:
             scn = common_name(cert.subject)
             fn = "".join(x for x in scn if x.isalnum()) + '.pem'
-            print(f'#             >>> {fn}')
+            print(f'# {ii}      >>> {fn}')
             with open(fn, 'wb') as f:
                 f.write(cert.public_bytes(serialization.Encoding.PEM))
 
@@ -109,63 +109,85 @@ def pe_section_flags(sec):
         x = 'x'
     return r + w + x
 
-# pylint: disable=too-many-branches
-def efi_binary(filename, extract = False, verbose = False):
-    print(f'# file: {filename}')
-    pe = pefile.PE(filename)
-    for sec in pe.sections:
-        if sec.Name.startswith(b'/'):
-            idx = getcstr(sec.Name[1:])
-            sec.Name = pe_string(pe, int(idx))
-        print(f'#    section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
-              f' {pe_section_flags(sec)}'
-              f' ({sec.Name.decode()})')
-        if sec.Name == b'.sbat\0\0\0':
-            sbat = sec.get_data()
-            entries = sbat.decode().rstrip('\n\0').split('\n')
-            for entry in entries:
-                print(f'#       {entry}')
-        if sec.Name == b'.vendor_cert':
-            vcert = sec.get_data()
-            (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
-            if dbs:
-                print(f'#       db: {dbo} +{dbs}')
-                db = vcert [ dbo : dbo + dbs ]
-                print_vendor_cert(db, verbose)
-            if dbxs:
-                print(f'#       dbx: {dbxo} +{dbxs}')
-                dbx = vcert [ dbxo : dbxo + dbxs ]
-                print_vendor_cert(dbx, verbose)
-        if sec.Name == b'.sbatlevel':
-            levels = sec.get_data()
-            (version, poff, loff) = struct.unpack_from('<III', levels)
-            print_sbat_entries('previous', getcstr(levels[poff + 4:]))
-            print_sbat_entries('latest', getcstr(levels[loff + 4:]))
-        if sec.Name == b'.sdmagic':
-            cstr = getcstr(sec.get_data())
-            print(f'#       {cstr.decode()}')
-
+def pe_print_sigs(filename, pe, indent, extract, verbose):
+    i  = f'{"":{indent}s}'
+    ii = f'{"":{indent+3}s}'
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
-        print(f'#    sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
+        print(f'# {i}sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
         sigs = pe.__data__[ sighdr.VirtualAddress :
                             sighdr.VirtualAddress + sighdr.Size ]
         pos = 0
         index = 0
         while pos + 8 < len(sigs):
             (slen, srev, stype) = struct.unpack_from('<LHH', sigs, pos)
-            print(f'#       signature: len 0x{slen:x}, type 0x{stype:x}')
+            print(f'# {ii}signature: len 0x{slen:x}, type 0x{stype:x}')
             if extract:
                 index += 1
                 fn = filename.split('/')[-1] + f'.sig{index}'
-                print(f'#       >>> {fn}')
+                print(f'# {ii}>>> {fn}')
                 with open(fn, 'wb') as f:
                     f.write(sigs [ pos : pos + slen ])
             if stype == 2:
                 sig_type2(sigs [ pos + 8 : pos + slen ],
-                          extract, verbose)
+                          ii, extract, verbose)
             pos += slen
             pos = (pos + 7) & ~7 # align
+
+# pylint: disable=too-many-branches
+def pe_print_section(pe, sec, indent, verbose):
+    i  = f'{"":{indent}s}'
+    ii = f'{"":{indent+3}s}'
+    if sec.Name.startswith(b'/'):
+        idx = getcstr(sec.Name[1:])
+        sec.Name = pe_string(pe, int(idx))
+    print(f'# {i}section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
+          f' {pe_section_flags(sec)}'
+          f' ({sec.Name.decode()})')
+    if sec.Name == b'.sbat\0\0\0':
+        sbat = sec.get_data().decode().rstrip('\n\0')
+        entries = sbat.split('\n')
+        for entry in entries:
+            print(f'# {ii}{entry}')
+    if sec.Name == b'.vendor_cert':
+        vcert = sec.get_data()
+        (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
+        if dbs:
+            print(f'# {ii}db: {dbo} +{dbs}')
+            db = vcert [ dbo : dbo + dbs ]
+            print_vendor_cert(db, ii, verbose)
+        if dbxs:
+            print(f'# {ii}dbx: {dbxo} +{dbxs}')
+            dbx = vcert [ dbxo : dbxo + dbxs ]
+            print_vendor_cert(dbx, ii, verbose)
+    if sec.Name == b'.sbatlevel':
+        levels = sec.get_data()
+        (version, poff, loff) = struct.unpack_from('<III', levels)
+        print_sbat_entries(ii, 'previous', getcstr(levels[poff + 4:]))
+        print_sbat_entries(ii, 'latest', getcstr(levels[loff + 4:]))
+    if sec.Name in (b'.sdmagic', b'.uname\0\0'):
+        value = sec.get_data().decode().rstrip('\n\0')
+        print(f'# {ii}{value}')
+    if sec.Name == b'.osrel\0\0':
+        osrel = sec.get_data().decode().rstrip('\n\0')
+        entries = osrel.split('\n')
+        for entry in entries:
+            if entry.startswith('PRETTY_NAME'):
+                print(f'# {ii}{entry}')
+    if sec.Name == b'.linux\0\0':
+        print(f'# {ii}embedded binary')
+        npe = pefile.PE(data = sec.get_data())
+        if npe:
+            for nsec in npe.sections:
+                pe_print_section(npe, nsec, indent + 6, verbose)
+            pe_print_sigs(None, npe, indent + 6, False, verbose)
+
+def efi_binary(filename, extract = False, verbose = False):
+    print(f'# file: {filename}')
+    pe = pefile.PE(filename)
+    for sec in pe.sections:
+        pe_print_section(pe, sec, 3, verbose)
+    pe_print_sigs(filename, pe, 3, extract, verbose)
 
 def read_sig(filename):
     print(f'# <<< {filename} (signature)')
