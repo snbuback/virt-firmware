@@ -165,9 +165,10 @@ def pe_print_section(pe, sec, indent, verbose):
         (version, poff, loff) = struct.unpack_from('<III', levels)
         print_sbat_entries(ii, 'previous', getcstr(levels[poff + 4:]))
         print_sbat_entries(ii, 'latest', getcstr(levels[loff + 4:]))
-    if sec.Name in (b'.sdmagic', b'.uname\0\0'):
-        value = sec.get_data().decode().rstrip('\n\0')
-        print(f'# {ii}{value}')
+    if sec.Name in (b'.sdmagic', b'.uname\0\0', b'.data.ident'):
+        lines = sec.get_data().decode().rstrip('\n\0')
+        for line in lines.split('\n'):
+            print(f'# {ii}{line}')
     if sec.Name == b'.osrel\0\0':
         osrel = sec.get_data().decode().rstrip('\n\0')
         entries = osrel.split('\n')
