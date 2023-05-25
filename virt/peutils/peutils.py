@@ -144,11 +144,6 @@ def pe_print_section(pe, sec, indent, verbose):
     print(f'# {i}section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
           f' {pe_section_flags(sec)}'
           f' ({sec.Name.decode()})')
-    if sec.Name == b'.sbat\0\0\0':
-        sbat = sec.get_data().decode().rstrip('\n\0')
-        entries = sbat.split('\n')
-        for entry in entries:
-            print(f'# {ii}{entry}')
     if sec.Name == b'.vendor_cert':
         vcert = sec.get_data()
         (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
@@ -165,7 +160,8 @@ def pe_print_section(pe, sec, indent, verbose):
         (version, poff, loff) = struct.unpack_from('<III', levels)
         print_sbat_entries(ii, 'previous', getcstr(levels[poff + 4:]))
         print_sbat_entries(ii, 'latest', getcstr(levels[loff + 4:]))
-    if sec.Name in (b'.sdmagic', b'.uname\0\0', b'.data.ident', b'.cmdline'):
+    if sec.Name in (b'.sdmagic', b'.data.ident', b'.cmdline',
+                    b'.uname\0\0', b'.sbat\0\0\0'):
         lines = sec.get_data().decode().rstrip('\n\0')
         for line in lines.split('\n'):
             print(f'# {ii}{line}')
