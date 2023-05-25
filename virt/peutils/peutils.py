@@ -141,7 +141,7 @@ def pe_print_section(pe, sec, indent, verbose):
     if sec.Name.startswith(b'/'):
         idx = getcstr(sec.Name[1:])
         sec.Name = pe_string(pe, int(idx))
-    print(f'# {i}section: 0x{sec.PointerToRawData:06x} +0x{sec.SizeOfRawData:06x}'
+    print(f'# {i}section: 0x{sec.PointerToRawData:08x} +0x{sec.SizeOfRawData:08x}'
           f' {pe_section_flags(sec)}'
           f' ({sec.Name.decode()})')
     if sec.Name == b'.vendor_cert':
