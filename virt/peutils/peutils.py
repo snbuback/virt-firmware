@@ -67,7 +67,7 @@ def print_sbat_entries(ii, name, data):
     print(f'# {ii}{name}')
     entries = data.decode().rstrip('\n').split('\n')
     for entry in entries:
-        print(f'# {ii}    {entry}')
+        print(f'# {ii}   {entry}')
 
 def sig_type2(data, ii, extract = False, verbose = False):
     certs = pkcs7.load_der_pkcs7_certificates(data)
@@ -165,7 +165,7 @@ def pe_print_section(pe, sec, indent, verbose):
         (version, poff, loff) = struct.unpack_from('<III', levels)
         print_sbat_entries(ii, 'previous', getcstr(levels[poff + 4:]))
         print_sbat_entries(ii, 'latest', getcstr(levels[loff + 4:]))
-    if sec.Name in (b'.sdmagic', b'.uname\0\0', b'.data.ident'):
+    if sec.Name in (b'.sdmagic', b'.uname\0\0', b'.data.ident', b'.cmdline'):
         lines = sec.get_data().decode().rstrip('\n\0')
         for line in lines.split('\n'):
             print(f'# {ii}{line}')
