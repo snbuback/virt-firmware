@@ -173,18 +173,23 @@ def pe_print_section(pe, sec, indent, verbose):
                 print(f'# {ii}{entry}')
     if sec.Name == b'.linux\0\0':
         print(f'# {ii}embedded binary')
-        npe = pefile.PE(data = sec.get_data())
-        if npe:
+        try:
+            npe = pefile.PE(data = sec.get_data())
             for nsec in npe.sections:
                 pe_print_section(npe, nsec, indent + 6, verbose)
             pe_print_sigs(None, npe, indent + 6, False, verbose)
+        except pefile.PEFormatError:
+            print(f'# {ii}   not a PE binary')
 
 def efi_binary(filename, extract = False, verbose = False):
     print(f'# file: {filename}')
-    pe = pefile.PE(filename)
-    for sec in pe.sections:
-        pe_print_section(pe, sec, 3, verbose)
-    pe_print_sigs(filename, pe, 3, extract, verbose)
+    try:
+        pe = pefile.PE(filename)
+        for sec in pe.sections:
+            pe_print_section(pe, sec, 3, verbose)
+        pe_print_sigs(filename, pe, 3, extract, verbose)
+    except pefile.PEFormatError:
+        print('#    not a PE binary')
 
 def read_sig(filename):
     print(f'# <<< {filename} (signature)')
