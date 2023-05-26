@@ -1,4 +1,4 @@
-#/usr/bin/python3
+#!/usr/bin/python3
 """ experimental efi boot config tool """
 import os
 import sys
