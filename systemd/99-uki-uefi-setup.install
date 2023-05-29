@@ -1,0 +1,64 @@
+#!/usr/bin/sh
+# -*- mode: shell-script; indent-tabs-mode: nil; sh-basic-offset: 4; -*-
+# ex: ts=8 sw=4 sts=4 et filetype=sh
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+set -e
+
+COMMAND="${1:?}"
+KERNEL_VERSION="${2:?}"
+
+ENTRY_TOKEN="$KERNEL_INSTALL_ENTRY_TOKEN"
+BOOT_ROOT="$KERNEL_INSTALL_BOOT_ROOT"
+
+UKI_DIR_BOOT="$BOOT_ROOT/EFI/Linux"
+UKI_DIR_ESP="`bootctl -p`/EFI/Linux"
+
+TRIES_FILE="${KERNEL_INSTALL_CONF_ROOT:-/etc/kernel}/tries"
+if [ -f "$TRIES_FILE" ]; then
+    echo "Error: boot counting is not supported by $0." >&2
+    exit 1
+fi
+
+UKI_FILE_BOOT="$UKI_DIR_BOOT/$ENTRY_TOKEN-$KERNEL_VERSION.efi"
+UKI_FILE_ESP="$UKI_DIR_ESP/$ENTRY_TOKEN-$KERNEL_VERSION.efi"
+
+case "$COMMAND" in
+    remove)
+        # 'tries' file may had changed after UKI got installed, remove
+        # all $UKI_DIR_ESP/$ENTRY_TOKEN-$KERNEL_VERSION{,\+.*}.efi entries.
+        [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
+            echo "Removing $UKI_DIR_ESP/$ENTRY_TOKEN-$KERNEL_VERSION*.efi from UEFI boot entries"
+        for uki in "$UKI_DIR_ESP/$ENTRY_TOKEN-$KERNEL_VERSION.efi" \
+            "$UKI_DIR_ESP/$ENTRY_TOKEN-$KERNEL_VERSION+"*".efi"; do
+            [ -f "$uki" ] && kernel-bootcfg --remove-uki "$uki"
+        done
+        ;;
+    add)
+        [ "$KERNEL_INSTALL_LAYOUT" = "uki" ] || exit 0
+
+        # UKI is always copied to $BOOT by the standard 90-uki-copy.install
+        if [ ! -f "$UKI_FILE_BOOT" ]; then
+            echo "$UKI_FILE_BOOT does not exist!" >&2
+            exit 1
+        fi
+
+        [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
+            echo "Adding $UKI_FILE_ESP to ESP and UEFI boot entries"
+
+        # Copy the UKI to the ESP when $BOOT and ESP differ
+        if [ ! -f "$UKI_FILE_ESP" ]; then
+            install -D -m 0644 "$KERNEL_IMAGE" "$UKI_FILE_ESP" || {
+                echo "Error: could not copy '$KERNEL_IMAGE' to '$UKI_FILE_ESP'." >&2
+	        exit 1
+            }
+        fi
+
+        kernel-bootcfg --add-uki "$UKI_FILE_ESP" --title "$KERNEL_VERSION" --once
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+exit 0

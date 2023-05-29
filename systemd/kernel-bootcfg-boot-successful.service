@@ -1,0 +1,15 @@
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+
+[Unit]
+Description=UKI Successful Boot
+After=sysinit.target
+Before=systemd-user-sessions.service
+ConditionPathExists=!/etc/initrd-release
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=kernel-bootcfg --boot-successful --update-csv
+
+[Install]
+WantedBy=basic.target
