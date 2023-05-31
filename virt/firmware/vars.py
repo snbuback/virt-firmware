@@ -67,6 +67,8 @@ def main():
     pgroup.add_argument('--set-fallback-no-reboot', dest = 'set_fallback_no_reboot',
                         action = 'store_true', default = False,
                         help = 'disable rebooting for fallback.efi')
+    pgroup.add_argument('--set-sbat-level', dest = 'sbatlevel', type = str,
+                        help = 'set SbatLevel variable', metavar = 'FILE')
 
     pgroup = parser.add_argument_group('Secure boot setup options')
     pgroup.add_argument('--set-pk', dest = 'pk',  nargs = 2,
@@ -205,6 +207,9 @@ def main():
 
     if options.set_fallback_no_reboot:
         varlist.set_uint32('FB_NO_REBOOT', 1)
+
+    if options.sbatlevel:
+        varlist.set_from_file('SbatLevel', options.sbatlevel)
 
     if options.set_json:
         with open(options.set_json, "r", encoding = 'utf-8') as f:

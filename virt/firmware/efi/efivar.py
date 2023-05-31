@@ -91,6 +91,11 @@ efivar_defaults = {
                   EFI_VARIABLE_RUNTIME_ACCESS),
         'guid' : guids.Shim,
     },
+    'SbatLevel' : {
+        'attr' : (EFI_VARIABLE_NON_VOLATILE |
+                  EFI_VARIABLE_BOOTSERVICE_ACCESS),
+        'guid' : guids.Shim,
+    },
     'SHIM_DEBUG' : {
         'attr' : (EFI_VARIABLE_NON_VOLATILE |
                   EFI_VARIABLE_BOOTSERVICE_ACCESS),
@@ -274,6 +279,11 @@ class EfiVar:
         self.data += struct.pack('=H', index)
         self.update_time()
 
+    def set_from_file(self, filename):
+        with open(filename, 'rb') as f:
+            self.data = f.read()
+        self.update_time()
+
     def fmt_bool(self):
         if self.data[0]:
             return 'bool: ON'
@@ -394,6 +404,13 @@ class EfiVarList(collections.UserDict):
             var = self.create(name)
         logging.info('append to variable %s: 0x%04X', name, index)
         var.append_boot_order(index)
+
+    def set_from_file(self, name, filename):
+        var = self.get(name)
+        if not var:
+            var = self.create(name)
+        logging.info('set variable %s from file %s', name, filename)
+        var.set_from_file(filename)
 
 
     def add_cert(self, name, owner, filename, replace = False):
