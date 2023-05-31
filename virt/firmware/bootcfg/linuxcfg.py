@@ -1,4 +1,4 @@
-#/usr/bin/python3
+#!/usr/bin/python3
 # pylint: disable=consider-iterating-dictionary
 """ linux specific boot config management code """
 import os

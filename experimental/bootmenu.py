@@ -1,4 +1,4 @@
-#/usr/bin/python3
+#!/usr/bin/python3
 """ efi boot menu """
 import os
 import sys
