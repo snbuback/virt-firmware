@@ -273,15 +273,18 @@ class Edk2FfsFile(Edk2CommonBase):
         0x06 : 'peim',
         0x07 : 'driver',
         0x09 : 'application',
-        0x0a : 'smm',
+        0x0a : 'mm',
         0x0b : 'fw-volume',
-        0x0d : 'smm-core',
+        0x0d : 'mm-core',
+        0x0e : 'mm-standalone',
+        0x0f : 'mm-standalone-core',
         0xf0 : 'padding',
     }
     sectiontypes = (
         0x03, 0x04, 0x05,
         0x06, 0x07, 0x08, 0x09,
         0x0a, 0x0b, 0x0d,
+        0x0e, 0x0f,
     )
 
     def __init__(self, data = None):
