@@ -60,6 +60,12 @@ Try `virt-fw-sigdb --help` for more usage information.
 Read efi variables from linux efivarfs and decode/print them.
 
 
+## kernel-bootcfg
+
+Manage efi boot configuration for UKIs (unified kernel images) when
+using direkt boot (without boot loader like grub or systemd-boot).
+
+
 ## pe-dumpinfo
 
 Information dump for pe (the format used by efi) binaries.
