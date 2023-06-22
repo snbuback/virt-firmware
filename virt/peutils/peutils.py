@@ -114,7 +114,7 @@ def pe_print_sigs(filename, pe, indent, extract, verbose):
     ii = f'{"":{indent+3}s}'
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
-        print(f'# {i}sigdata: 0x{sighdr.VirtualAddress:06x} +0x{sighdr.Size:06x}')
+        print(f'# {i}sigdata: 0x{sighdr.VirtualAddress:08x} +0x{sighdr.Size:08x}')
         sigs = pe.__data__[ sighdr.VirtualAddress :
                             sighdr.VirtualAddress + sighdr.Size ]
         pos = 0
