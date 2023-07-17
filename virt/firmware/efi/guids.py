@@ -68,6 +68,7 @@ name_table = {
     # protocols (also used for variables)
     "59324945-ec44-4c0d-b1cd-9db139df070c" : "EfiIScsiInitiatorNameProtocol",
     "9fb9a8a1-2f4a-43a6-889c-d0f7b6c47ad5" : "EfiDhcp6ServiceBindingProtocol",
+    "5b446ed1-e30b-4faa-871a-3654eca36080" : "EfiIp4Config2Protocol",
     "937fe521-95ae-4d1a-8929-48bcd90ad31a" : "EfiIp6ConfigProtocol",
 
     # signature list types
