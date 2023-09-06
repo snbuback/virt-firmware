@@ -115,7 +115,7 @@ def update_boot_csv(cfg, options):
         args = ''
         if entry.optdata:
             args = ucs16.from_ucs16(entry.optdata)
-        csvdata += f'{shimname},{entry.title},{args},Comment\n'
+        csvdata += f'{shimname},{entry.title},{args} ,Comment\n'
 
     logging.info('Updating %s/%s', shimdir, csvname)
     with open(f'{shimdir}/{csvname}', 'wb') as f:
