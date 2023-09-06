@@ -93,7 +93,7 @@ class EfiBootConfig:
 
     def find_uki_entry(self, uki):
         for (nr, entry) in self.bentr.items():
-            if not entry.optdata:
+            if not entry or not entry.optdata:
                 continue
             optpath = str(ucs16.from_ucs16(entry.optdata, 0))
             if optpath == str(uki):
