@@ -108,7 +108,10 @@ def update_boot_csv(cfg, options):
                      .replace('EFI','CSV')
 
     csvdata = ''
-    for nr in cfg.blist:
+    # Shim fallback creates entries and adds them to BootOrder as it reads
+    # BOOT.CSV, this means that the existing BootOrder must be parsed in reversed
+    # order.
+    for nr in reversed(cfg.blist):
         entry = cfg.bentr[nr]
         if entry.devicepath != shimpath:
             continue
