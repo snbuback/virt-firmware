@@ -95,7 +95,7 @@ class EfiBootConfig:
         for (nr, entry) in self.bentr.items():
             if not entry.optdata:
                 continue
-            optpath = str(ucs16.from_ucs16(entry.optdata, 0))
+            optpath = str(ucs16.from_ucs16(entry.optdata, 0)).strip()
             if optpath == str(uki):
                 return nr
         return None
