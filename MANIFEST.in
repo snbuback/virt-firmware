@@ -2,5 +2,6 @@
 graft tests
 graft man
 graft experimental
+graft systemd
 global-exclude *~
 global-exclude *.py[cod]
