@@ -15,6 +15,7 @@ PKG_TARBALL	:= dist/virt-firmware-$(PKG_VERSION).tar.gz
 MANPAGES	:= man/virt-fw-dump.1
 MANPAGES	+= man/virt-fw-vars.1
 MANPAGES	+= man/virt-fw-sigdb.1
+MANPAGES	+= man/kernel-bootcfg.1
 
 default:
 	@echo "targets: lint install uninstall clean"
@@ -47,6 +48,7 @@ man/%.1:
 man/virt-fw-dump.1:  setup.cfg virt/firmware/dump.py man/virt-fw-dump.inc
 man/virt-fw-vars.1:  setup.cfg virt/firmware/vars.py man/virt-fw-vars.inc
 man/virt-fw-sigdb.1: setup.cfg virt/firmware/sigdb.py man/virt-fw-sigdb.inc
+man/kernel-bootcfg.1: setup.cfg virt/firmware/sigdb.py man/kernel-bootcfg.inc
 
 
 install:
