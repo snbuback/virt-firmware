@@ -114,7 +114,8 @@ def pe_print_sigs(filename, pe, indent, extract, verbose):
     ii = f'{"":{indent+3}s}'
     sighdr = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4]
     if sighdr.VirtualAddress and sighdr.Size:
-        print(f'# {i}sigdata: 0x{sighdr.VirtualAddress:08x} +0x{sighdr.Size:08x}')
+        print(f'# {i}sigdata:'
+              f' addr 0x{sighdr.VirtualAddress:08x} +0x{sighdr.Size:08x}')
         sigs = pe.__data__[ sighdr.VirtualAddress :
                             sighdr.VirtualAddress + sighdr.Size ]
         pos = 0
@@ -141,9 +142,10 @@ def pe_print_section(pe, sec, indent, verbose):
     if sec.Name.startswith(b'/'):
         idx = getcstr(sec.Name[1:])
         sec.Name = pe_string(pe, int(idx))
-    print(f'# {i}section: 0x{sec.PointerToRawData:08x} +0x{sec.SizeOfRawData:08x}'
-          f' {pe_section_flags(sec)}'
-          f' ({sec.Name.decode()})')
+    print(f'# {i}section:'
+          f' file 0x{sec.PointerToRawData:08x} +0x{sec.SizeOfRawData:08x}'
+          f'  virt 0x{sec.VirtualAddress:08x} +0x{sec.Misc_VirtualSize:08x}'
+          f'  {pe_section_flags(sec)} ({sec.Name.decode()})')
     if sec.Name == b'.vendor_cert':
         vcert = sec.get_data()
         (dbs, dbxs, dbo, dbxo) = struct.unpack_from('<IIII', vcert)
