@@ -49,6 +49,9 @@ def main():
     pgroup.add_argument('--set-boot-uri', dest = 'set_boot_uri',
                         help = 'set network boot uri to LINK (once, using BootNext)',
                         metavar = 'LINK')
+    pgroup.add_argument('--add-boot-uri', dest = 'add_boot_uri',
+                        help = 'add network boot uri to LINK',
+                        metavar = 'LINK')
     pgroup.add_argument('--append-boot-filepath', dest = 'append_boot_filepath',
                         action = 'append', type = str,
                         help = 'append boot entry for FILE (permanent, using BootOrder)',
@@ -181,6 +184,12 @@ def main():
         bpath = devpath.DevicePath.uri(options.set_boot_uri)
         varlist.set_boot_entry(0x99, title, bpath)
         varlist.set_boot_next(0x99)
+
+    if options.add_boot_uri:
+        items = options.add_boot_uri.split('/')
+        title = 'netboot ' + items[-1]
+        bpath = devpath.DevicePath.uri(options.add_boot_uri)
+        varlist.add_boot_entry(title, bpath)
 
     if options.append_boot_filepath:
         for item in options.append_boot_filepath:
